@@ -15,4 +15,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: latest-monitor-report
-          path: output/latest.*
+          path: |
+            output/latest.*
+            output/gtc_watchlist_v2.*
