@@ -1,0 +1,23 @@
+name: Streamlit Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: |
+          PYTHONPATH=src streamlit run app/streamlit_app.py --server.headless=true --server.port=8501 > streamlit.log 2>&1 &
+          echo $! > streamlit.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:8501/_stcore/health && exit 0
+            sleep 2
+          done
+          cat streamlit.log
+          exit 1
