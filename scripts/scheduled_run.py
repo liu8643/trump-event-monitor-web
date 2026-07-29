@@ -1,0 +1,15 @@
+from datetime import datetime, timezone
+from pathlib import Path
+import sys
+ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT/'src'))
+from trump_monitor.config import load_config
+from trump_monitor.engine import TrumpEventEngine
+from trump_monitor.collectors.google_news_rss import GoogleNewsRssAdapter
+from trump_monitor.collectors.truth_social import TruthManualImportAdapter,TruthSearchIndexAdapter
+from trump_monitor.exporters.excel_exporter import export_excel
+from trump_monitor.exporters.json_exporter import export_json
+from trump_monitor.exporters.html_exporter import export_html
+cfg=load_config(ROOT/'config.yaml'); adapters=[TruthManualImportAdapter(ROOT/cfg.truth_manual_import_path,cfg.truth_account),TruthSearchIndexAdapter(cfg.truth_account),GoogleNewsRssAdapter()]
+r=TrumpEventEngine(cfg,adapters).run(datetime.now(timezone.utc)); out=ROOT/'output'; out.mkdir(exist_ok=True)
+export_excel(r,out/'latest.xlsx'); export_json(r,out/'latest.json'); export_html(r,out/'latest.html')
+print(r.status,r.run_id,len(r.events))

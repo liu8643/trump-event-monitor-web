@@ -25,6 +25,13 @@ from trump_monitor.exporters.excel_exporter import export_excel
 from trump_monitor.exporters.json_exporter import export_json
 from trump_monitor.exporters.html_exporter import export_html
 from trump_monitor.repository import EventRepository
+from trump_monitor.watchlist import update_watchlist
+from trump_monitor.exporters.docx_exporter import export_docx
+from trump_monitor.exporters.pdf_exporter import export_pdf
+try:
+    from streamlit_autorefresh import st_autorefresh
+except Exception:
+    st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
 
@@ -74,6 +81,7 @@ def run_analysis(mode: str):
             st.write(f"{pct}% — {text}")
             bar.progress(pct)
         result = engine.run(datetime.now(timezone.utc))
+        j,c=update_watchlist(result.taiwan_candidates,OUTPUT); result.watchlist_paths=[str(j),str(c)]
         repository().save_run(result)
         status.update(label=f"完成：{result.status}", state="complete" if result.status in {"SUCCESS", "PARTIAL"} else "error")
     st.session_state["result"] = result
@@ -93,7 +101,9 @@ with st.sidebar:
         st.warning("SAMPLE 是測試資料，不可作投資分析。")
     else:
         st.success("ONLINE：Truth Social 為第一手來源；Reuters/AP/Bloomberg 交叉驗證；Google RSS、NewsAPI、GNews補充。")
-    if st.button("開始／重新分析", type="primary", use_container_width=True):
+    auto5=st.checkbox("每5分鐘自動更新（頁面開啟時）",value=False)
+    if auto5 and st_autorefresh: st_autorefresh(interval=300000,key="v2_auto_refresh")
+    if st.button("開始／重新分析", type="primary", use_container_width=True) or (auto5 and "result" in st.session_state):
         run_analysis(mode)
     result = get_result()
     if result:
@@ -171,7 +181,7 @@ elif page == "新聞明細":
         rows=[]
         for e in result.events:
             for s in e.sources:
-                rows.append({"發布時間":s.published_at,"事件ID":e.event_id,"標題":s.title,"來源":s.source_name,"Publisher Group":s.publisher_group,"來源角色":s.source_type,"直接引用":s.direct_quote,"URL":s.url})
+                rows.append({"發布時間":s.published_at,"事件ID":e.event_id,"標題":s.title,"AI中文摘要":s.ai_summary_zh,"AI情緒":s.ai_sentiment,"內容狀態":s.content_status,"來源":s.source_name,"Publisher Group":s.publisher_group,"來源角色":s.source_type,"直接引用":s.direct_quote,"URL":s.url})
         st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True,column_config={"URL":st.column_config.LinkColumn()})
 
 elif page == "Truth貼文":
@@ -180,7 +190,7 @@ elif page == "Truth貼文":
     posts=[] if not result else [(e,s) for e in result.events for s in e.sources if s.source_type=="DIRECT_POST"]
     if not posts: st.warning(f"最近72小時未取得Truth Social第一手貼文。狀態：{result.truth_social_status if result else '尚未分析'}。不以Sample替代。")
     for e,s in posts:
-        st.subheader(s.title); st.write(s.body); st.link_button("開啟原始貼文",s.url); st.caption(e.event_id)
+        st.subheader(s.title); st.write(s.body or s.ai_summary_zh); st.info(f"AI摘要：{s.ai_summary_zh}｜情緒：{s.ai_sentiment}｜內容狀態：{s.content_status}"); st.link_button("開啟原始貼文",s.url); st.caption(e.event_id)
 
 elif page == "市場影響":
     st.header("市場影響")
@@ -195,12 +205,9 @@ elif page == "台股候選":
     result=get_result()
     if not result: st.info("尚無分析結果。")
     else:
-        rows=[]
-        for e in result.events:
-            for sec in e.beneficiary_sectors:
-                rows.append({"事件ID":e.event_id,"產業":sec,"方向":"受惠候選","可信度":e.score.confidence,"資料新鮮度":e.data_freshness,"Gate":"BLOCKED_NO_MARKET_DATA" if result.data_mode == "ONLINE" else "BLOCKED_SAMPLE","GTC":"WATCH"})
+        rows=result.taiwan_candidates
         st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
-        st.warning("未接入即時台股行情、流動性與個股資料前，不產生 BUY_READY 或個股 Top10。")
+        st.warning("V2以事件/產業映射產生候選與內部WatchList；未接即時價格、流動性與持倉前，一律WATCH，不直接BUY_READY。")
 
 elif page == "GTC預覽":
     st.header("GTC 預覽")
@@ -226,6 +233,8 @@ elif page == "報表中心":
         xlsx=export_excel(result,OUTPUT/f"川普72小時事件報告_{result.run_id}.xlsx")
         js=export_json(result,OUTPUT/f"trump_events_{result.run_id}.json")
         html=export_html(result,OUTPUT/f"trump_report_{result.run_id}.html")
+        docx=export_docx(result,OUTPUT/f"trump_report_{result.run_id}.docx")
+        pdf=export_pdf(result,OUTPUT/f"trump_report_{result.run_id}.pdf")
         st.download_button("下載 Excel",xlsx.read_bytes(),xlsx.name,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",use_container_width=True)
         st.download_button("下載 JSON",js.read_bytes(),js.name,"application/json",use_container_width=True)
         st.download_button("下載 HTML",html.read_bytes(),html.name,"text/html",use_container_width=True)

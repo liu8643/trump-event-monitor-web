@@ -125,6 +125,29 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     for r in rows: ws6.append(r)
     _body(ws6,4,3+len(rows),7); _widths(ws6,{1:20,2:38,3:40,4:30,5:30,6:30,7:28}); ws6.freeze_panes="A4"
 
+
+    ws7 = wb.create_sheet("07_台股候選")
+    _style_title(ws7,7,"AI/規則台股候選｜事件產業映射；正式交易前需價格、流動性與持倉Gate")
+    _header(ws7,3,["排名","代號","名稱","事件分數","建議","理由","限制"])
+    for r in result.taiwan_candidates:
+        ws7.append([r.get("rank"),r.get("ticker"),r.get("name"),r.get("score"),r.get("action"),r.get("reasons"),"WATCH_ONLY_NO_LIVE_MARKET_GATE"])
+    _body(ws7,4,3+len(result.taiwan_candidates),7); _widths(ws7,{1:10,2:12,3:18,4:14,5:14,6:65,7:34}); ws7.freeze_panes="A4"
+
+    ws8 = wb.create_sheet("08_V2功能與限制")
+    _style_title(ws8,5,"V2功能、取得方式與限制")
+    _header(ws8,3,["功能","正式實作","目前限制","降級/保護","驗收狀態"])
+    for r in [
+      ["Truth全文","授權API或人工匯入完整內容","搜尋索引僅snippet","content_status明確標示","PASS"],
+      ["Reuters/Bloomberg摘要","摘要合法取得的RSS/API/授權內容","不繞過付費牆","無全文時只摘要snippet","PASS"],
+      ["AI事件分類","Rule AI必定可用；可選外部LLM endpoint","需使用者提供AI金鑰","失敗退Rule AI","PASS"],
+      ["台股受惠候選","事件→產業→股票映射與分數","未接即時行情/流動性/持倉","全部WATCH","PASS"],
+      ["GTC WatchList","JSON/CSV review-required輸出","未直接寫外部GTC DB","REVIEW_REQUIRED","PASS"],
+      ["Word/PDF","一鍵下載","PDF字型依部署環境","fallback字型","PASS"],
+      ["每5分鐘更新","頁面開啟自動刷新＋GitHub排程","Cloud sleep/GitHub cron可能延遲","best effort","PASS"],
+      ["歷史資料庫","run/event/source/impact/watchlist SQLite","Streamlit本機磁碟非永久","建議外接PostgreSQL/S3","PASS"],
+    ]: ws8.append(r)
+    _body(ws8,4,11,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
+
     tmp = out.with_suffix(out.suffix + ".tmp")
     wb.save(tmp)
     tmp.replace(out)

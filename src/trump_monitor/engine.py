@@ -11,6 +11,8 @@ from trump_monitor.impact import build_impacts
 from trump_monitor.models import EventCluster, RunResult, RawItem
 from trump_monitor.scoring import score_event
 from trump_monitor.collectors.source_policy import SOURCE_PRIORITY_LABELS
+from trump_monitor.ai_service import analyze
+from trump_monitor.taiwan_stocks import rank_candidates
 
 
 class TrumpEventEngine:
@@ -29,7 +31,10 @@ class TrumpEventEngine:
         unique,_=deduplicate(raw); grouped=defaultdict(list)
         for item in unique:
             item.source_type=classify_source_type(item)  # type: ignore[misc]
-            grouped[classify_category(item)].append(item)
+            ai=analyze(item.title,item.body)
+            item.ai_summary_zh=ai.summary_zh; item.ai_sentiment=ai.sentiment; item.ai_provider=ai.provider
+            if item.body and len(item.body)>item.title.__len__()+20: item.content_status="FULL_OR_LICENSED"
+            grouped[ai.category or classify_category(item)].append(item)
         events=[]
         for idx,(category,items) in enumerate(grouped.items(),1):
             score=score_event(items,category); impacts=build_impacts(category,score)
@@ -39,12 +44,15 @@ class TrumpEventEngine:
             event_id=f"TRUMP-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d}-{idx:03d}"
             action="REDUCE" if score.final_score<=-3 and score.confidence>=.8 else "WATCH"
             beneficiary=sorted({x for i in impacts for x in i.beneficiary.split("、") if x}); negative=sorted({x for i in impacts for x in i.negative.split("、") if x})
-            events.append(EventCluster(event_id=event_id,topic=top.title,category=category,summary=(top.body or top.title)[:500],
+            summary=top.ai_summary_zh or (top.body or top.title)[:500]
+            events.append(EventCluster(event_id=event_id,topic=top.title,category=category,summary=summary,
                 first_seen=min(x.published_at for x in items),last_seen=max(x.published_at for x in items),source_count=len({x.publisher_group for x in items}),
                 sources=ordered,score=score,impacts=impacts,beneficiary_sectors=beneficiary,negative_sectors=negative,battle_action=action,
                 event_label=category.replace("／","_").replace(" ","_").upper(),data_freshness="SAMPLE" if self.config.sample_mode else "CURRENT",
                 primary_source_present=any(x.source_tier==1 for x in items),verification_source_count=len({x.publisher_group for x in items if x.source_tier==2})))
         events.sort(key=lambda e:(e.score.importance,e.primary_source_present,e.verification_source_count,e.score.confidence,e.last_seen),reverse=True)
+        candidates=rank_candidates(events)
+        for e in events: e.taiwan_candidates=[x for x in candidates if e.event_id in x.get("reasons","")][:10]
         status="SUCCESS" if events and not warnings else "PARTIAL" if events else ("SOURCE_FAILED" if warnings else "DATA_UNAVAILABLE")
         truth_sources={k:v for k,v in source_status.items() if k.startswith("truth_")}
         truth_count=sum(source_counts.get(k,0) for k in truth_sources)
@@ -55,4 +63,4 @@ class TrumpEventEngine:
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
             rule_version="TRUMP_RULE_V1.2",prompt_version="TRUMP_PROMPT_V1.2",model_version="SOURCE_PRIORITY_RULE_V1.2",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
-            truth_social_status=truth_status,events=events,warnings=warnings)
+            truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])

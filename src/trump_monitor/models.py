@@ -24,6 +24,10 @@ class RawItem(BaseModel):
     source_role: SourceRole = "SUPPLEMENT"
     acquisition_method: str = "UNKNOWN"
     account_handle: str = ""
+    content_status: str = "SNIPPET"
+    ai_summary_zh: str = ""
+    ai_sentiment: str = "中性"
+    ai_provider: str = "RULE_AI_V2"
 
 
 class EventScore(BaseModel):
@@ -66,6 +70,7 @@ class EventCluster(BaseModel):
     data_freshness: str = "CURRENT"
     primary_source_present: bool = False
     verification_source_count: int = 0
+    taiwan_candidates: list[dict] = Field(default_factory=list)
 
 
 class RunResult(BaseModel):
@@ -86,3 +91,5 @@ class RunResult(BaseModel):
     truth_social_status: str = "NOT_CONFIGURED"
     events: list[EventCluster]
     warnings: list[str] = Field(default_factory=list)
+    taiwan_candidates: list[dict] = Field(default_factory=list)
+    watchlist_paths: list[str] = Field(default_factory=list)

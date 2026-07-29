@@ -1,0 +1,14 @@
+V2.0.0 validation
+- python compileall: PASS
+- pytest: 13 passed
+- smoke test: PASS (Sample-only fixture)
+- Excel report: 8 sheets
+- AI rule classifier: PASS
+- Taiwan candidate mapper: PASS
+- ZIP integrity: PASS
+- Live Streamlit deployment: verified by user screenshot before V2 update
+Known environment limits:
+- Truth full text requires licensed API or manual import; search index remains snippet.
+- Reuters/Bloomberg full text requires licensed content and no paywall bypass is implemented.
+- GitHub cron and Streamlit auto-refresh are best effort.
+- SQLite on Community Cloud is not durable across restarts.
