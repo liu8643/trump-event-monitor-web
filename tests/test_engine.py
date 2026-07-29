@@ -11,4 +11,4 @@ def test_engine_sample():
     result=engine.run(datetime(2026,7,28,0,0,tzinfo=timezone.utc))
     assert result.status in {"SUCCESS","PARTIAL"}
     assert result.events
-    assert result.schema_version == "gtc.trump_event.v1.2"
+    assert result.schema_version == "gtc.trump_event.v2.1"

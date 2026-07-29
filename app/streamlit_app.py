@@ -94,6 +94,7 @@ def get_result():
 
 with st.sidebar:
     st.title("📡 Trump News Center")
+    st.caption("正式版本 v2.1｜事件聚類・證據鏈・市場決策整合")
     page = st.radio("功能", [
         "首頁總覽","事件中心","事件分析","新聞明細","Truth貼文","市場影響","台股候選","GTC預覽","報表中心","歷史執行","來源設定","系統Log"
     ])
@@ -112,14 +113,14 @@ with st.sidebar:
         st.caption(f"Status: {result.status}")
 
 if page == "首頁總覽":
-    st.title("川普 72 小時事件監控與 GTC 整合")
+    st.title("川普 72 小時事件監控與 GTC 整合｜v2.1")
     if result := get_result():
         if result.data_mode == "SAMPLE":
             st.error("目前是 SAMPLE 測試資料，不可用於投資分析。")
         elif result.status in {"DATA_UNAVAILABLE", "SOURCE_FAILED"}:
             st.error("正式來源無可用資料；系統沒有自動改用 Sample。")
         else:
-            st.success("目前使用最近 72 小時真實新聞來源。")
+            st.success("目前使用最近 72 小時正式來源；Truth直接貼文與搜尋發現分開標示。")
     result = get_result()
     if not result:
         st.info("請由左側按下「開始／重新分析」。")
@@ -159,6 +160,8 @@ elif page == "事件中心":
             st.json(e.score.breakdown)
         with c2:
             st.subheader(e.topic); st.write(e.summary)
+            st.write("證據品質：",e.evidence_quality,"｜驗證來源：",e.verification_source_count,"｜GTC Gate：",e.gtc_gate)
+            st.info(e.decision_rationale)
             st.caption(f"Event ID: {e.event_id}｜{e.first_seen} → {e.last_seen}")
             st.write("受惠：", "、".join(e.beneficiary_sectors) or "無")
             st.write("受壓：", "、".join(e.negative_sectors) or "無")
@@ -187,7 +190,7 @@ elif page == "新聞明細":
 
 elif page == "Truth貼文":
     st.header("Truth Social 第一手貼文")
-    st.caption("完整全文僅在授權 API 或人工匯入取得；搜尋索引只會標示為摘要/片段，不冒充全文。")
+    st.caption("授權 API 或人工匯入才列為直接貼文；搜尋索引只做貼文發現，不計入直接證據。")
     uploaded=st.file_uploader("匯入 Truth Social 原始貼文 JSON（可選）",type=["json"],help="JSON陣列欄位：published_at、body/text、url，可選title/raw_item_id。")
     if uploaded is not None:
         try:
@@ -294,6 +297,7 @@ elif page == "來源設定":
     st.write({"Truth API Token":bool(os.getenv("TRUTH_API_TOKEN")),"Truth API Endpoint":bool(os.getenv("TRUTH_API_BASE_URL") or config.truth_api_base_url),"Truth人工匯入":str(ROOT/config.truth_manual_import_path),"Google News RSS":True,"GNews Key":bool(os.getenv("GNEWS_API_KEY")),"NewsAPI Key":bool(os.getenv("NEWSAPI_API_KEY"))})
     if result := get_result():
         st.write("來源狀態", result.source_status)
+        st.write("Truth直接/發現狀態", result.truth_social_status)
         st.write("來源筆數", result.source_counts)
         st.write("Truth Social 狀態", result.truth_social_status)
     st.info("正式來源失敗時會明確顯示FAILED／RATE_LIMIT／LOGIN_REQUIRED等原因，不會以Sample替代。")

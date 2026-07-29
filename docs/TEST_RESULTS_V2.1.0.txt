@@ -1,0 +1,15 @@
+V2.1.0 VALIDATION
+=================
+python -m compileall app src scripts tests : PASS
+pytest -q                              : PASS (19 passed)
+python scripts/smoke_test.py           : PASS
+Smoke result                           : status=SUCCESS, events=6, artifacts=7
+Regression coverage:
+- airport does not trigger AI/semiconductor category
+- Truth search index is UNCONFIRMED, not DIRECT_POST
+- Truth Social posting-spree/AI-image story stays Social/TMTG
+- distinct same-category stories remain separate events
+- related multi-source stories cluster as one event
+- integrated Excel exports 9 worksheets including event timeline
+Known environment boundary:
+- ONLINE source behavior must be verified after GitHub/Streamlit deployment.

@@ -1,3 +1,7 @@
+# V2.1.0
+- Integrated deep-report narrative with automated evidence/event pipeline.
+- Fixed category-only clustering, airport/AI false positive, Truth search-index evidence inflation, weighted market aggregation, GTC rationale and timeline export.
+
 # Changelog
 
 ## 2.0.0

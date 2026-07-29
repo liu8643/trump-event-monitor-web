@@ -51,28 +51,28 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     wb = Workbook()
     ws = wb.active
     ws.title = "01_三日重大摘要"
-    _style_title(ws, 18, "川普最近三天新聞與市場影響｜正式程式輸出")
-    ws.merge_cells("A2:R2")
+    _style_title(ws, 22, "川普72小時事件、證據鏈與市場決策｜V2.1整合正式版")
+    ws.merge_cells("A2:V2")
     ws["A2"] = f"Run ID：{result.run_id}｜Rule：{result.rule_version}｜Prompt：{result.prompt_version}｜Schema：{result.schema_version}｜Status：{result.status}｜Data Mode：{result.data_mode}｜Truth Social：{result.truth_social_status}"
     ws["A2"].fill = NOTE_FILL; ws["A2"].alignment = Alignment(wrap_text=True)
     ws.append([]); ws.append(["重大事件數", len(result.events), "資料來源", ", ".join(result.source_status), "警告數", len(result.warnings)])
-    headers = ["排名","事件ID","事件日期","最新更新時間","重要度","事件分數","主題","類別","摘要重點","消息來源數","可信度","美股分數","台股分數","原油分數","黃金分數","受惠方向","受壓方向","GTC建議"]
+    headers = ["排名","事件ID","事件日期","最新更新時間","重要度","事件分數","主題","類別","摘要重點","消息來源數","可信度","證據品質","驗證來源數","美股分數","台股分數","原油分數","黃金分數","受惠方向","受壓方向","GTC建議","GTC Gate","決策理由"]
     _header(ws, 8, headers)
     for rank, e in enumerate(result.events, 1):
         impact = {x.asset: x.final_score for x in e.impacts}
-        ws.append([rank,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),"★"*e.score.importance,e.score.rule_score,e.topic,e.category,e.summary,e.source_count,e.score.confidence,impact.get("美股",0),impact.get("台股",0),impact.get("原油",0),impact.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action])
-    _body(ws,9,8+len(result.events),18); _widths(ws,{1:7,2:24,3:14,4:20,5:12,6:11,7:32,8:20,9:50,10:12,11:12,12:11,13:11,14:11,15:11,16:30,17:30,18:13})
+        ws.append([rank,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),"★"*e.score.importance,e.score.rule_score,e.topic,e.category,e.summary,e.source_count,e.score.confidence,e.evidence_quality,e.verification_source_count,impact.get("美股",0),impact.get("台股",0),impact.get("原油",0),impact.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action,e.gtc_gate,e.decision_rationale])
+    _body(ws,9,8+len(result.events),22); _widths(ws,{1:7,2:24,3:14,4:20,5:12,6:11,7:34,8:20,9:52,10:12,11:12,12:14,13:14,14:11,15:11,16:11,17:11,18:30,19:30,20:13,21:18,22:48})
     ws.freeze_panes = "A9"
 
     ws2 = wb.create_sheet("02_新聞明細")
-    _style_title(ws2,16,"最近三天新聞明細與來源｜證據鏈與來源優先級")
-    headers2=["發布時間","事件ID","新聞標題","來源","Publisher Group","主題分類","來源可信度","來源類型","優先級Tier","驗證角色","取得方式","是否直接引用","是否重複","Duplicate Of","事件群組","來源網址"]
+    _style_title(ws2,17,"最近三天新聞明細與來源｜證據鏈與來源優先級")
+    headers2=["發布時間","事件ID","新聞標題","來源","Publisher Group","主題分類","來源可信度","來源類型","優先級Tier","驗證角色","取得方式","內容狀態","摘要方式","AI情緒","是否直接引用","事件群組","來源網址"]
     _header(ws2,3,headers2)
     row=4
     for e in result.events:
         for src in e.sources:
-            ws2.append([src.published_at.isoformat(),e.event_id,src.title,src.source_name,src.publisher_group,e.category,src.source_confidence,src.source_type,src.source_tier,src.source_role,src.acquisition_method,"是" if src.direct_quote else "否","否","",e.event_id,src.url]); row += 1
-    _body(ws2,4,row-1,16); _widths(ws2,{1:20,2:24,3:55,4:22,5:20,6:20,7:14,8:18,9:12,10:16,11:20,12:13,13:12,14:16,15:24,16:70}); ws2.freeze_panes="A4"
+            ws2.append([src.published_at.isoformat(),e.event_id,src.title,src.source_name,src.publisher_group,e.category,src.source_confidence,src.source_type,src.source_tier,src.source_role,src.acquisition_method,src.content_status,src.ai_summary_status,src.ai_sentiment,"是" if src.direct_quote else "否",e.event_id,src.url]); row += 1
+    _body(ws2,4,row-1,17); _widths(ws2,{1:20,2:24,3:55,4:22,5:20,6:20,7:14,8:18,9:12,10:16,11:20,12:24,13:22,14:14,15:13,16:24,17:70}); ws2.freeze_panes="A4"
 
     ws3 = wb.create_sheet("03_市場影響")
     _style_title(ws3,10,"市場影響推估｜Rule 70%＋AI 30%")
@@ -81,9 +81,10 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     for e in result.events:
         for i in e.impacts: aggregate.setdefault(i.asset,[]).append(i)
     for asset, impacts in aggregate.items():
-        avg=lambda field: round(sum(getattr(x,field) for x in impacts)/len(impacts))
-        top=max(impacts,key=lambda x:abs(x.final_score))
-        ws3.append([asset,avg("rule_score"),avg("ai_score"),avg("final_score"),sum(x.confidence for x in impacts)/len(impacts),top.direction,top.rationale,top.beneficiary,top.negative,top.horizon])
+        den=sum(max(.01,x.confidence) for x in impacts)
+        avg=lambda field: round(sum(getattr(x,field)*max(.01,x.confidence) for x in impacts)/den,2)
+        top=max(impacts,key=lambda x:abs(x.final_score)*x.confidence)
+        ws3.append([asset,avg("rule_score"),avg("ai_score"),avg("final_score"),round(den/len(impacts),3),top.direction,top.rationale,top.beneficiary,top.negative,top.horizon])
     _body(ws3,5,4+len(aggregate),10); _widths(ws3,{1:16,2:12,3:12,4:12,5:12,6:16,7:48,8:30,9:30,10:18}); ws3.freeze_panes="A5"
 
     ws4 = wb.create_sheet("04_產業影響")
@@ -96,18 +97,18 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     for sec,(e,sign) in sectors.items():
         score=int(round(abs(e.score.final_score))) * sign
         direction="偏多" if score>=2 else "偏空" if score<=-2 else "中性"
-        gate="BLOCKED_SAMPLE" if e.data_freshness!="CURRENT" else "WATCH_ONLY"
-        ws4.append([sec,direction,score,e.score.confidence,e.data_freshness,e.category,"事件催化","事件反轉",e.battle_action,gate,"事件映射範例"])
+        gate="BLOCKED_SAMPLE" if e.data_freshness!="CURRENT" else e.gtc_gate
+        ws4.append([sec,direction,score,e.score.confidence,e.data_freshness,e.category,"事件催化","事件反轉",e.battle_action,gate,e.decision_rationale])
     _body(ws4,4,3+len(sectors),11); _widths(ws4,{1:22,2:16,3:10,4:12,5:16,6:30,7:25,8:25,9:13,10:18,11:28}); ws4.freeze_panes="A4"
 
     ws5 = wb.create_sheet("05_GTC事件輸出")
-    _style_title(ws5,22,"GTC 事件狀態機匯入格式｜gtc.trump_event.v1")
-    hdr=["schema_version","run_id","event_id","event_date","last_seen","category","topic","importance","final_score","confidence","us_score","tw_score","oil_score","gold_score","beneficiary_sectors","negative_sectors","battle_action","event_label","source_count","source_name","source_url","data_freshness"]
+    _style_title(ws5,26,"GTC 事件狀態機匯入格式｜gtc.trump_event.v1")
+    hdr=["schema_version","run_id","event_id","event_date","last_seen","category","topic","importance","final_score","confidence","us_score","tw_score","oil_score","gold_score","beneficiary_sectors","negative_sectors","battle_action","event_label","source_count","source_name","source_url","data_freshness","evidence_quality","verification_count","gtc_gate","decision_rationale"]
     _header(ws5,3,hdr)
     for e in result.events:
         impacts={x.asset:x.final_score for x in e.impacts}; src=e.sources[0] if e.sources else None
-        ws5.append([result.schema_version,result.run_id,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),e.category,e.topic,e.score.importance,e.score.final_score,e.score.confidence,impacts.get("美股",0),impacts.get("台股",0),impacts.get("原油",0),impacts.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action,e.event_label,e.source_count,src.source_name if src else "",src.url if src else "",e.data_freshness])
-    _body(ws5,4,3+len(result.events),22); _widths(ws5,{1:22,2:28,3:24,4:14,5:20,6:20,7:34,8:12,9:12,10:12,11:11,12:11,13:11,14:11,15:32,16:32,17:16,18:24,19:12,20:20,21:70,22:18}); ws5.freeze_panes="A4"
+        ws5.append([result.schema_version,result.run_id,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),e.category,e.topic,e.score.importance,e.score.final_score,e.score.confidence,impacts.get("美股",0),impacts.get("台股",0),impacts.get("原油",0),impacts.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action,e.event_label,e.source_count,src.source_name if src else "",src.url if src else "",e.data_freshness,e.evidence_quality,e.verification_source_count,e.gtc_gate,e.decision_rationale])
+    _body(ws5,4,3+len(result.events),26); _widths(ws5,{1:22,2:28,3:24,4:14,5:20,6:20,7:34,8:12,9:12,10:12,11:11,12:11,13:11,14:11,15:32,16:32,17:16,18:24,19:12,20:20,21:70,22:18,23:16,24:16,25:18,26:50}); ws5.freeze_panes="A4"
 
     ws6 = wb.create_sheet("06_方法與限制")
     _style_title(ws6,7,"報表方法、版本、判定規則與限制")
@@ -118,7 +119,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
         ["時間窗",f"最近{result.lookback_hours}小時","UTC儲存/台北顯示","時區誤差","統一時區","邊界測試",""],
         ["來源優先順序"," → ".join(result.source_priority),"Truth第一手、主流媒體驗證、聚合補充","來源缺口","逐來源狀態與筆數","優先順序可見",""],
         ["資料來源",str(result.source_status),"多Adapter","來源失效","降級與警告","來源缺口可見",str(result.source_counts)],
-        ["Truth Social",result.truth_social_status,"授權API/人工匯入/搜尋索引","未取得第一手貼文","明確狀態且不以Sample替代","狀態可見",""],
+        ["Truth Social",result.truth_social_status,"授權API/人工匯入才是直接貼文；搜尋索引只做發現","索引誤認原文","DIRECT與DISCOVERY分開計數","狀態可見",""],
         ["市場分數","Rule 70%＋AI 30%","AI失敗Rule-only","不是價格預測","信心與期間","可拆解",""],
         ["投資限制","事件情報用途","不得單獨下單","快速反轉","人工確認","不產直接買點",""],
     ]
@@ -138,7 +139,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     _header(ws8,3,["功能","正式實作","目前限制","降級/保護","驗收狀態"])
     for r in [
       ["Truth全文","授權API或人工匯入完整內容","搜尋索引僅snippet","content_status明確標示","PASS"],
-      ["Reuters/Bloomberg摘要","摘要合法取得的RSS/API/授權內容","不繞過付費牆","無全文時只摘要snippet","PASS"],
+      ["媒體摘要","RSS/API/公開可讀內容；內容狀態明示","無正文時不可稱全文摘要","只摘要合法取得內容","PASS"],
       ["AI事件分類","Rule AI必定可用；可選外部LLM endpoint","需使用者提供AI金鑰","失敗退Rule AI","PASS"],
       ["台股受惠候選","事件→產業→股票映射與分數","未接即時行情/流動性/持倉","全部WATCH","PASS"],
       ["GTC WatchList","JSON/CSV review-required輸出","未直接寫外部GTC DB","REVIEW_REQUIRED","PASS"],
@@ -147,6 +148,15 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
       ["歷史資料庫","run/event/source/impact/watchlist SQLite","Streamlit本機磁碟非永久","建議外接PostgreSQL/S3","PASS"],
     ]: ws8.append(r)
     _body(ws8,4,11,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
+
+    ws9 = wb.create_sheet("09_事件時間軸")
+    _style_title(ws9,10,"事件時間軸、證據角色與判定演進")
+    _header(ws9,3,["事件ID","時間","來源","證據角色","標題","事件類別","證據品質","事件分數","GTC Gate","決策理由"])
+    rr=4
+    for e in result.events:
+        for t in e.timeline:
+            ws9.append([e.event_id,t.get("time"),t.get("source"),t.get("role"),t.get("headline"),e.category,e.evidence_quality,e.score.final_score,e.gtc_gate,e.decision_rationale]); rr+=1
+    _body(ws9,4,max(4,rr-1),10); _widths(ws9,{1:24,2:22,3:22,4:16,5:60,6:22,7:16,8:13,9:18,10:55}); ws9.freeze_panes="A4"
 
     tmp = out.with_suffix(out.suffix + ".tmp")
     wb.save(tmp)
