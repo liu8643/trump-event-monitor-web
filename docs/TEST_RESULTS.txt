@@ -1,0 +1,23 @@
+Validation date: 2026-07-29
+
+1. pytest
+   Result: 5 passed
+
+2. scripts/smoke_test.py
+   Result: PASS
+   Run ID: TRUMP-RUN-20260728-080000
+   Events: 4
+   Status: SUCCESS
+   Outputs: smoke_report.xlsx, smoke_events.json, smoke_report.html
+
+3. python -m compileall -q src app scripts
+   Result: PASS
+
+4. Local Streamlit health check
+   Result: BLOCKED_ENV
+   Reason: current execution environment does not have the streamlit executable installed.
+   Mitigation: requirements.txt and .github/workflows/streamlit-smoke.yml install dependencies before health check.
+
+5. Existing main program line-by-line modification
+   Result: NOT APPLICABLE
+   Reason: no source ZIP / main.py was uploaded. This delivery is a newly built program based on Word1, Excel1 and the report specification.

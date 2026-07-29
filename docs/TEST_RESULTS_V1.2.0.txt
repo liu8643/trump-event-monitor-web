@@ -1,0 +1,34 @@
+Trump Event Monitor v1.2.0 - Truth Primary Source
+Date: 2026-07-29
+
+1. python -m compileall -q src app scripts
+   RESULT: PASS
+
+2. pytest -q
+   RESULT: 11 passed
+
+3. Source priority tests
+   - Truth Social DIRECT_POST Tier 1: PASS
+   - Reuters/AP/Bloomberg Tier 2 Verification: PASS
+   - Google News RSS other publishers Tier 3: PASS
+   - NewsAPI/GNews Tier 4: PASS
+
+4. TruthCollector tests
+   - Licensed API mock JSON: PASS
+   - Manual import JSON: PASS
+   - Search index collector syntax/integration: PASS
+
+5. Formal mode behavior
+   - No automatic Sample fallback: PASS
+   - SOURCE_FAILED / DATA_UNAVAILABLE preserved: PASS
+
+6. Export
+   - Excel six sheets: PASS
+   - JSON: PASS
+   - HTML: PASS
+   - Source tier/role/acquisition fields added: PASS
+
+7. Environment-limited checks
+   - Live Truth Social HTTP: BLOCKED_ENV (container DNS unavailable)
+   - Streamlit local executable: BLOCKED_ENV (not installed in build container)
+   - GitHub workflows included for dependency install and health validation.

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trump-event-monitor"
+version = "1.2.0"
+description = "Trump 72-hour event monitoring and GTC integration web app"
+requires-python = ">=3.11"
+dependencies = [
+  "streamlit>=1.38,<2",
+  "pandas>=2.2,<3",
+  "openpyxl>=3.1,<4",
+  "requests>=2.32,<3",
+  "python-dateutil>=2.9,<3",
+  "pydantic>=2.8,<3",
+  "PyYAML>=6,<7",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120

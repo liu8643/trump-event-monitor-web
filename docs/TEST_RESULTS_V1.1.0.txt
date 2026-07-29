@@ -1,0 +1,16 @@
+Trump 72-Hour Event Monitor v1.1.0 Validation
+Date: 2026-07-29
+
+PASS: pytest - 7 tests passed
+PASS: python compileall - src/app/scripts
+PASS: Production default config mode=AUTO
+PASS: AUTO/ONLINE adapters include Google News RSS real source
+PASS: GNews and NewsAPI enabled when API keys exist
+PASS: No automatic fallback to Sample in AUTO/ONLINE
+PASS: All source failure returns SOURCE_FAILED; zero-result without errors returns DATA_UNAVAILABLE
+PASS: Truth Social status explicitly AUTHORIZED_SOURCE_NOT_CONFIGURED
+PASS: Sample mode is manual/test only
+PASS: Export metadata includes Data Mode, Source Status, Truth Social status
+BLOCKED_ENV: Live DNS/network call from build container failed due sandbox DNS restriction
+BLOCKED_ENV: Streamlit local health check unavailable because streamlit executable is not installed in build container
+READY_FOR_GITHUB: CI and Streamlit smoke workflows install dependencies and perform health check

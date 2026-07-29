@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+
+from trump_monitor.classifier import classify_category, classify_source_type
+from trump_monitor.config import AppConfig
+from trump_monitor.dedup import deduplicate
+from trump_monitor.impact import build_impacts
+from trump_monitor.models import EventCluster, RunResult, RawItem
+from trump_monitor.scoring import score_event
+from trump_monitor.collectors.source_policy import SOURCE_PRIORITY_LABELS
+
+
+class TrumpEventEngine:
+    def __init__(self, config: AppConfig, adapters: list): self.config, self.adapters = config, adapters
+
+    def run(self, now: datetime | None = None) -> RunResult:
+        started=now or datetime.now(timezone.utc)
+        if started.tzinfo is None: started=started.replace(tzinfo=timezone.utc)
+        start=started-timedelta(hours=self.config.lookback_hours)
+        raw=[]; source_status={}; source_counts={}; warnings=[]
+        for adapter in self.adapters:
+            try:
+                rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows); source_status[adapter.name]=f"SUCCESS:{len(rows)}"
+            except Exception as exc:
+                source_counts[adapter.name]=0; source_status[adapter.name]=f"FAILED:{type(exc).__name__}"; warnings.append(f"{adapter.name}: {exc}")
+        unique,_=deduplicate(raw); grouped=defaultdict(list)
+        for item in unique:
+            item.source_type=classify_source_type(item)  # type: ignore[misc]
+            grouped[classify_category(item)].append(item)
+        events=[]
+        for idx,(category,items) in enumerate(grouped.items(),1):
+            score=score_event(items,category); impacts=build_impacts(category,score)
+            # Primary Truth Social first, then verification media, then supplemental sources.
+            ordered=sorted(items,key=lambda x:(x.source_tier,-x.source_confidence,-x.published_at.timestamp()))
+            top=ordered[0]
+            event_id=f"TRUMP-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d}-{idx:03d}"
+            action="REDUCE" if score.final_score<=-3 and score.confidence>=.8 else "WATCH"
+            beneficiary=sorted({x for i in impacts for x in i.beneficiary.split("、") if x}); negative=sorted({x for i in impacts for x in i.negative.split("、") if x})
+            events.append(EventCluster(event_id=event_id,topic=top.title,category=category,summary=(top.body or top.title)[:500],
+                first_seen=min(x.published_at for x in items),last_seen=max(x.published_at for x in items),source_count=len({x.publisher_group for x in items}),
+                sources=ordered,score=score,impacts=impacts,beneficiary_sectors=beneficiary,negative_sectors=negative,battle_action=action,
+                event_label=category.replace("／","_").replace(" ","_").upper(),data_freshness="SAMPLE" if self.config.sample_mode else "CURRENT",
+                primary_source_present=any(x.source_tier==1 for x in items),verification_source_count=len({x.publisher_group for x in items if x.source_tier==2})))
+        events.sort(key=lambda e:(e.score.importance,e.primary_source_present,e.verification_source_count,e.score.confidence,e.last_seen),reverse=True)
+        status="SUCCESS" if events and not warnings else "PARTIAL" if events else ("SOURCE_FAILED" if warnings else "DATA_UNAVAILABLE")
+        truth_sources={k:v for k,v in source_status.items() if k.startswith("truth_")}
+        truth_count=sum(source_counts.get(k,0) for k in truth_sources)
+        if truth_count: truth_status=f"SUCCESS:{truth_count}"
+        elif any(v.startswith("FAILED") for v in truth_sources.values()): truth_status="FAILED_OR_NOT_CONFIGURED"
+        else: truth_status="NO_POSTS_IN_WINDOW"
+        return RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
+            completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
+            rule_version="TRUMP_RULE_V1.2",prompt_version="TRUMP_PROMPT_V1.2",model_version="SOURCE_PRIORITY_RULE_V1.2",schema_version=self.config.schema_version,
+            source_status=source_status,source_counts=source_counts,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
+            truth_social_status=truth_status,events=events,warnings=warnings)

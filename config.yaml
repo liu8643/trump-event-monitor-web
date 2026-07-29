@@ -1,0 +1,35 @@
+app:
+  title: "川普 72 小時事件監控與 GTC 整合"
+  timezone: "Asia/Taipei"
+  lookback_hours: 72
+  mode: "AUTO"
+sources:
+  truth_social:
+    enabled: true
+    priority: 1
+    account: "realDonaldTrump"
+    profile_url: "https://truthsocial.com/@realDonaldTrump"
+    api_base_url: ""
+    manual_import_path: "data/truth_manual_posts.json"
+    search_index_enabled: true
+  verification_media:
+    publishers: ["Reuters", "Associated Press", "Bloomberg"]
+    priority: 2
+  google_news_rss:
+    enabled: true
+    priority: 3
+    timeout_seconds: 20
+  gnews:
+    enabled: true
+    priority: 4
+  newsapi:
+    enabled: true
+    priority: 4
+scoring:
+  rule_weight: 0.7
+  ai_weight: 0.3
+  buy_ready_confidence: 0.8
+  buy_ready_abs_score: 3
+export:
+  output_dir: "output"
+  schema_version: "gtc.trump_event.v1.2"
