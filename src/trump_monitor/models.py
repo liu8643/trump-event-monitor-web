@@ -27,7 +27,8 @@ class RawItem(BaseModel):
     content_status: str = "SNIPPET"
     ai_summary_zh: str = ""
     ai_sentiment: str = "中性"
-    ai_provider: str = "RULE_AI_V2"
+    ai_provider: str = "RULE_EXTRACTIVE_V2"
+    ai_summary_status: str = "EXTRACTIVE_SNIPPET"
 
 
 class EventScore(BaseModel):

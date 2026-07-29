@@ -10,6 +10,7 @@ class AIAnalysis:
     sentiment: str
     confidence: float
     provider: str
+    summary_status: str
 
 KEYWORDS = {
     "關稅／國際貿易": ["tariff", "trade", "customs", "duty"],
@@ -28,7 +29,7 @@ def heuristic_analyze(title: str, body: str) -> AIAnalysis:
     pos=sum(w in text for w in ["deal","peace","agreement","growth","support"])
     sentiment="偏空" if neg>pos else "偏多" if pos>neg else "中性"
     summary=(body or title).strip().replace("\n"," ")[:420]
-    return AIAnalysis(category, summary, sentiment, .66, "RULE_AI_V2")
+    return AIAnalysis(category, summary, sentiment, .66, "RULE_EXTRACTIVE_V2", "EXTRACTIVE_SNIPPET")
 
 def analyze(title: str, body: str) -> AIAnalysis:
     """Optional OpenAI-compatible endpoint; deterministic rule engine remains the safe fallback."""
@@ -40,6 +41,6 @@ def analyze(title: str, body: str) -> AIAnalysis:
         r.raise_for_status(); payload=r.json()
         content=payload["choices"][0]["message"]["content"]
         data=json.loads(content)
-        return AIAnalysis(str(data["category"]),str(data["summary_zh"]),str(data["sentiment"]),float(data.get("confidence",.75)),f"LLM:{model}")
+        return AIAnalysis(str(data["category"]),str(data["summary_zh"]),str(data["sentiment"]),float(data.get("confidence",.75)),f"LLM:{model}", "LLM_ABSTRACTIVE")
     except Exception:
         return heuristic_analyze(title,body)

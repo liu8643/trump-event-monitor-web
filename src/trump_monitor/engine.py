@@ -32,8 +32,11 @@ class TrumpEventEngine:
         for item in unique:
             item.source_type=classify_source_type(item)  # type: ignore[misc]
             ai=analyze(item.title,item.body)
-            item.ai_summary_zh=ai.summary_zh; item.ai_sentiment=ai.sentiment; item.ai_provider=ai.provider
-            if item.body and len(item.body)>item.title.__len__()+20: item.content_status="FULL_OR_LICENSED"
+            item.ai_summary_zh=ai.summary_zh; item.ai_sentiment=ai.sentiment; item.ai_provider=ai.provider; item.ai_summary_status=ai.summary_status
+            if item.acquisition_method in {"LICENSED_API", "MANUAL_IMPORT"} and item.body:
+                item.content_status="FULL_OR_LICENSED"
+            elif item.body:
+                item.content_status="SNIPPET_OR_FEED_SUMMARY"
             grouped[ai.category or classify_category(item)].append(item)
         events=[]
         for idx,(category,items) in enumerate(grouped.items(),1):

@@ -9,7 +9,13 @@ from trump_monitor.collectors.truth_social import TruthManualImportAdapter,Truth
 from trump_monitor.exporters.excel_exporter import export_excel
 from trump_monitor.exporters.json_exporter import export_json
 from trump_monitor.exporters.html_exporter import export_html
+from trump_monitor.exporters.docx_exporter import export_docx
+from trump_monitor.exporters.pdf_exporter import export_pdf
+from trump_monitor.watchlist import update_watchlist
+from trump_monitor.repository import EventRepository
 cfg=load_config(ROOT/'config.yaml'); adapters=[TruthManualImportAdapter(ROOT/cfg.truth_manual_import_path,cfg.truth_account),TruthSearchIndexAdapter(cfg.truth_account),GoogleNewsRssAdapter()]
 r=TrumpEventEngine(cfg,adapters).run(datetime.now(timezone.utc)); out=ROOT/'output'; out.mkdir(exist_ok=True)
-export_excel(r,out/'latest.xlsx'); export_json(r,out/'latest.json'); export_html(r,out/'latest.html')
-print(r.status,r.run_id,len(r.events))
+export_excel(r,out/'latest.xlsx'); export_json(r,out/'latest.json'); export_html(r,out/'latest.html'); export_docx(r,out/'latest.docx'); export_pdf(r,out/'latest.pdf')
+j,c=update_watchlist(r.taiwan_candidates,out); r.watchlist_paths=[str(j),str(c)]
+EventRepository(out/'trump_events.sqlite3').save_run(r)
+print(r.status,r.run_id,len(r.events),len(r.taiwan_candidates))

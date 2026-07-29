@@ -42,6 +42,7 @@ config = load_config(CONFIG_PATH)
 DATA_PATH = ROOT / "data" / "sample_items.json"
 OUTPUT = ROOT / config.output_dir
 DB_PATH = OUTPUT / "trump_events.sqlite3"
+RUNTIME_TRUTH_PATH = OUTPUT / "truth_manual_posts_runtime.json"
 
 @st.cache_resource
 def repository() -> EventRepository:
@@ -57,7 +58,7 @@ def build_adapters(mode: str):
     truth_api_url = os.getenv("TRUTH_API_BASE_URL") or config.truth_api_base_url
     if truth_api_url and os.getenv("TRUTH_API_TOKEN"):
         adapters.append(TruthOfficialApiAdapter(truth_api_url, config.truth_account))
-    adapters.append(TruthManualImportAdapter(ROOT / config.truth_manual_import_path, config.truth_account))
+    adapters.append(TruthManualImportAdapter(RUNTIME_TRUTH_PATH if RUNTIME_TRUTH_PATH.exists() else ROOT / config.truth_manual_import_path, config.truth_account))
     adapters.append(TruthSearchIndexAdapter(config.truth_account))
     # Verification and supplemental media follow.
     adapters.append(GoogleNewsRssAdapter())
@@ -181,16 +182,33 @@ elif page == "新聞明細":
         rows=[]
         for e in result.events:
             for s in e.sources:
-                rows.append({"發布時間":s.published_at,"事件ID":e.event_id,"標題":s.title,"AI中文摘要":s.ai_summary_zh,"AI情緒":s.ai_sentiment,"內容狀態":s.content_status,"來源":s.source_name,"Publisher Group":s.publisher_group,"來源角色":s.source_type,"直接引用":s.direct_quote,"URL":s.url})
+                rows.append({"發布時間":s.published_at,"事件ID":e.event_id,"標題":s.title,"摘要":s.ai_summary_zh,"摘要方式":s.ai_summary_status,"分析器":s.ai_provider,"AI情緒":s.ai_sentiment,"內容狀態":s.content_status,"來源":s.source_name,"Publisher Group":s.publisher_group,"來源角色":s.source_type,"直接引用":s.direct_quote,"URL":s.url})
         st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True,column_config={"URL":st.column_config.LinkColumn()})
 
 elif page == "Truth貼文":
-    st.header("Truth 貼文明細")
+    st.header("Truth Social 第一手貼文")
+    st.caption("完整全文僅在授權 API 或人工匯入取得；搜尋索引只會標示為摘要/片段，不冒充全文。")
+    uploaded=st.file_uploader("匯入 Truth Social 原始貼文 JSON（可選）",type=["json"],help="JSON陣列欄位：published_at、body/text、url，可選title/raw_item_id。")
+    if uploaded is not None:
+        try:
+            import json
+            rows=json.loads(uploaded.getvalue().decode("utf-8-sig"))
+            if not isinstance(rows,list): raise ValueError("最外層必須是JSON陣列")
+            OUTPUT.mkdir(parents=True,exist_ok=True); RUNTIME_TRUTH_PATH.write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding="utf-8")
+            st.success(f"已匯入 {len(rows)} 筆；請按左側『開始／重新分析』。")
+        except Exception as exc: st.error(f"匯入失敗：{exc}")
     result=get_result()
     posts=[] if not result else [(e,s) for e in result.events for s in e.sources if s.source_type=="DIRECT_POST"]
     if not posts: st.warning(f"最近72小時未取得Truth Social第一手貼文。狀態：{result.truth_social_status if result else '尚未分析'}。不以Sample替代。")
     for e,s in posts:
-        st.subheader(s.title); st.write(s.body or s.ai_summary_zh); st.info(f"AI摘要：{s.ai_summary_zh}｜情緒：{s.ai_sentiment}｜內容狀態：{s.content_status}"); st.link_button("開啟原始貼文",s.url); st.caption(e.event_id)
+        with st.container(border=True):
+            st.subheader(s.title)
+            if s.content_status=="FULL_OR_LICENSED": st.success("內容狀態：完整/授權原文")
+            else: st.warning(f"內容狀態：{s.content_status}（不是完整原文）")
+            st.write(s.body or "未取得文字內容")
+            st.info(f"摘要：{s.ai_summary_zh}｜摘要方式：{s.ai_summary_status}｜分析器：{s.ai_provider}｜情緒：{s.ai_sentiment}")
+            if s.url: st.link_button("開啟原始貼文",s.url)
+            st.caption(f"{e.event_id}｜取得方式：{s.acquisition_method}")
 
 elif page == "市場影響":
     st.header("市場影響")
@@ -235,13 +253,39 @@ elif page == "報表中心":
         html=export_html(result,OUTPUT/f"trump_report_{result.run_id}.html")
         docx=export_docx(result,OUTPUT/f"trump_report_{result.run_id}.docx")
         pdf=export_pdf(result,OUTPUT/f"trump_report_{result.run_id}.pdf")
-        st.download_button("下載 Excel",xlsx.read_bytes(),xlsx.name,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",use_container_width=True)
-        st.download_button("下載 JSON",js.read_bytes(),js.name,"application/json",use_container_width=True)
-        st.download_button("下載 HTML",html.read_bytes(),html.name,"text/html",use_container_width=True)
+        c1,c2,c3=st.columns(3)
+        c1.download_button("下載 Excel",xlsx.read_bytes(),xlsx.name,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",use_container_width=True)
+        c2.download_button("下載 Word",docx.read_bytes(),docx.name,"application/vnd.openxmlformats-officedocument.wordprocessingml.document",use_container_width=True)
+        c3.download_button("下載 PDF",pdf.read_bytes(),pdf.name,"application/pdf",use_container_width=True)
+        c4,c5,c6=st.columns(3)
+        c4.download_button("下載 JSON",js.read_bytes(),js.name,"application/json",use_container_width=True)
+        c5.download_button("下載 HTML",html.read_bytes(),html.name,"text/html",use_container_width=True)
+        watch_paths=[Path(x) for x in result.watchlist_paths if Path(x).exists()]
+        if len(watch_paths)>=2:
+            c6.download_button("下載 GTC WatchList JSON",watch_paths[0].read_bytes(),watch_paths[0].name,"application/json",use_container_width=True)
+            st.download_button("下載 GTC WatchList CSV",watch_paths[1].read_bytes(),watch_paths[1].name,"text/csv",use_container_width=True)
+        st.caption("GTC WatchList 為 REVIEW_REQUIRED；不會未經確認直接改寫既有 GTC 資料庫。")
 
 elif page == "歷史執行":
-    st.header("歷史執行")
-    st.dataframe(pd.DataFrame(repository().list_runs()),use_container_width=True,hide_index=True)
+    st.header("歷史事件資料庫（查詢與回溯）")
+    runs=repository().list_runs(100)
+    if not runs: st.info("尚無歷史執行。")
+    else:
+        q=st.text_input("搜尋 Run ID／日期／狀態")
+        filtered=[r for r in runs if not q or q.lower() in " ".join(str(v) for v in r.values()).lower()]
+        st.dataframe(pd.DataFrame(filtered),use_container_width=True,hide_index=True)
+        ids=[r["run_id"] for r in filtered]
+        if ids:
+            selected=st.selectbox("選擇批次查看明細",ids)
+            tabs=st.tabs(["事件","來源","市場影響","WatchList","完整JSON"])
+            with tabs[0]: st.dataframe(pd.DataFrame(repository().list_events(selected)),use_container_width=True,hide_index=True)
+            with tabs[1]: st.dataframe(pd.DataFrame(repository().list_sources(selected)),use_container_width=True,hide_index=True)
+            with tabs[2]: st.dataframe(pd.DataFrame(repository().list_impacts(selected)),use_container_width=True,hide_index=True)
+            with tabs[3]: st.dataframe(pd.DataFrame(repository().list_watchlist(selected)),use_container_width=True,hide_index=True)
+            with tabs[4]:
+                old_run=repository().load_run(selected)
+                st.json(old_run.model_dump(mode="json") if old_run else {})
+        st.warning("Streamlit Community Cloud 本機 SQLite 可能在重啟後消失；長期永久保存需外接 PostgreSQL/Supabase/S3。")
 
 elif page == "來源設定":
     st.header("來源設定與健康")

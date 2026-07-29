@@ -25,6 +25,22 @@ class EventRepository:
     def list_runs(self,limit=30):
         with sqlite3.connect(self.path) as c:
             c.row_factory=sqlite3.Row; return [dict(x) for x in c.execute("SELECT run_id,started_at,completed_at,status FROM source_runs ORDER BY started_at DESC LIMIT ?",(limit,)).fetchall()]
+    def list_events(self, run_id: str):
+        with sqlite3.connect(self.path) as c:
+            c.row_factory=sqlite3.Row
+            return [dict(x) for x in c.execute("SELECT * FROM events WHERE run_id=? ORDER BY score DESC,last_seen DESC",(run_id,)).fetchall()]
+    def list_sources(self, run_id: str):
+        with sqlite3.connect(self.path) as c:
+            c.row_factory=sqlite3.Row
+            return [dict(x) for x in c.execute("SELECT * FROM sources WHERE run_id=? ORDER BY published_at DESC",(run_id,)).fetchall()]
+    def list_impacts(self, run_id: str):
+        with sqlite3.connect(self.path) as c:
+            c.row_factory=sqlite3.Row
+            return [dict(x) for x in c.execute("SELECT * FROM impacts WHERE run_id=? ORDER BY ABS(final_score) DESC",(run_id,)).fetchall()]
+    def list_watchlist(self, run_id: str):
+        with sqlite3.connect(self.path) as c:
+            c.row_factory=sqlite3.Row
+            return [dict(x) for x in c.execute("SELECT * FROM watchlist WHERE run_id=? ORDER BY score DESC",(run_id,)).fetchall()]
     def load_run(self,run_id):
         with sqlite3.connect(self.path) as c:
             row=c.execute("SELECT payload_json FROM source_runs WHERE run_id=?",(run_id,)).fetchone(); return RunResult.model_validate_json(row[0]) if row else None
