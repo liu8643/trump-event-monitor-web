@@ -27,7 +27,10 @@ class TrumpEventEngine:
             try:
                 rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows); source_status[adapter.name]=(f"SUCCESS:{len(rows)}" if rows else "NO_DATA:0")
             except Exception as exc:
-                source_counts[adapter.name]=0; source_status[adapter.name]=f"FAILED:{type(exc).__name__}"; warnings.append(f"{adapter.name}: {exc}")
+                source_counts[adapter.name]=0
+                detail=" ".join(str(exc).split())[:180] or type(exc).__name__
+                source_status[adapter.name]=f"FAILED:{type(exc).__name__}:{detail}"
+                warnings.append(f"{adapter.name}: {detail}")
         unique,_=deduplicate(raw); grouped=defaultdict(list)
         for item in unique:
             item.source_type=classify_source_type(item)  # type: ignore[misc]
@@ -64,13 +67,13 @@ class TrumpEventEngine:
         if official_count:
             truth_status=f"OFFICIAL_TIMELINE_SUCCESS:{official_count};FALLBACK:{fallback_count}"
         elif official_state.startswith("FAILED"):
-            truth_status=f"OFFICIAL_TIMELINE_FAILED;FALLBACK:{fallback_count}"
+            truth_status=f"OFFICIAL_TIMELINE_FAILED:{official_state};FALLBACK:{fallback_count}"
         elif fallback_count:
             truth_status=f"OFFICIAL_TIMELINE_NO_POSTS;FALLBACK:{fallback_count}"
         else:
             truth_status="NO_POSTS_IN_WINDOW"
         return RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.2.2",prompt_version="TRUMP_PROMPT_V2.2.2",model_version="TRUTH_OFFICIAL_TIMELINE_CNBC_V2.2.2",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.3.0",prompt_version="TRUMP_PROMPT_V2.3.0",model_version="TRUTH_OFFICIAL_TIMELINE_CNBC_SOURCE_HEALTH_V2.3.0",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])

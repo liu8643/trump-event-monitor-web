@@ -101,7 +101,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     _body(ws4,4,3+len(sectors),11); _widths(ws4,{1:22,2:16,3:10,4:12,5:16,6:30,7:25,8:25,9:13,10:18,11:28}); ws4.freeze_panes="A4"
 
     ws5 = wb.create_sheet("05_GTC事件輸出")
-    _style_title(ws5,22,"GTC 事件狀態機匯入格式｜gtc.trump_event.v1")
+    _style_title(ws5,22,"GTC 事件狀態機匯入格式｜gtc.trump_event.v2.2")
     hdr=["schema_version","run_id","event_id","event_date","last_seen","category","topic","importance","final_score","confidence","us_score","tw_score","oil_score","gold_score","beneficiary_sectors","negative_sectors","battle_action","event_label","source_count","source_name","source_url","data_freshness"]
     _header(ws5,3,hdr)
     for e in result.events:
@@ -167,7 +167,10 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
         count=result.source_counts.get(key,0)
         role="財經媒體驗證" if key=="cnbc" else "來源蒐集／補充"
         independent="是" if key in result.source_status else "否"
+        warning_detail="；".join(w for w in result.warnings if w.startswith(f"{key}:"))
         note="原CNBC資料曾包含在google_news_rss內；V2.2.2新增獨立狀態與筆數。" if key=="cnbc" else ""
+        if warning_detail:
+            note=(note+"；" if note else "")+warning_detail
         ws9.append([key,status,count,labels.get(key,key),independent,note])
     _body(ws9,4,3+len(all_keys),6); _widths(ws9,{1:28,2:24,3:12,4:44,5:18,6:65}); ws9.freeze_panes="A4"
 

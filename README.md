@@ -1,4 +1,9 @@
 
+## V2.3 首頁來源健康儀表板
+
+首頁會固定列出 Truth Official、Truth Search、Reuters、AP、Bloomberg、CNBC、Google RSS、NewsAPI 與 GNews，並顯示每個來源的最近72小時筆數、SUCCESS／NO_DATA／FAILED／NOT_CONFIGURED、覆蓋率與詳細狀態。Reuters/AP/Bloomberg 的筆數由事件證據中的 publisher_group 去重統計；CNBC 為獨立 CnbcNewsAdapter 狀態。
+
+
 ## V2.2 Truth Social Official Timeline
 
 V2.2 在不移除任何既有來源或功能的前提下，新增最高優先來源：

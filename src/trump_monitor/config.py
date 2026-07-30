@@ -12,7 +12,7 @@ class AppConfig:
     lookback_hours: int = 72
     mode: str = "AUTO"
     output_dir: str = "output"
-    schema_version: str = "gtc.trump_event.v1.2"
+    schema_version: str = "gtc.trump_event.v2.2"
     rule_weight: float = 0.7
     ai_weight: float = 0.3
     buy_ready_confidence: float = 0.8
@@ -44,7 +44,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
     return AppConfig(
         title=app.get("title", AppConfig.title), timezone=app.get("timezone", AppConfig.timezone),
         lookback_hours=int(app.get("lookback_hours", 72)), mode=mode,
-        output_dir=export.get("output_dir", "output"), schema_version=export.get("schema_version", "gtc.trump_event.v1.2"),
+        output_dir=export.get("output_dir", "output"), schema_version=export.get("schema_version", "gtc.trump_event.v2.2"),
         rule_weight=float(scoring.get("rule_weight", .7)), ai_weight=float(scoring.get("ai_weight", .3)),
         buy_ready_confidence=float(scoring.get("buy_ready_confidence", .8)), buy_ready_abs_score=int(scoring.get("buy_ready_abs_score", 3)),
         truth_account=str(truth.get("account", "realDonaldTrump")), truth_profile_url=str(truth.get("profile_url", "https://truthsocial.com/@realDonaldTrump")),

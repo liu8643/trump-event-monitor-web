@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trump-event-monitor"
-version = "2.2.2"
-description = "Trump 72-hour event monitoring and GTC investment intelligence platform V2.2"
+version = "2.3.0"
+description = "Trump 72-hour event monitoring and GTC investment intelligence platform V2.3"
 requires-python = ">=3.11"
 dependencies = [
   "streamlit>=1.38,<2",

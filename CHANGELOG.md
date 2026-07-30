@@ -1,3 +1,17 @@
+## 2.3.0 - 2026-07-30
+- Added a homepage source-health dashboard for Truth Official, Truth Search, Reuters, AP, Bloomberg, CNBC, Google RSS, NewsAPI and GNews.
+- Added per-source count, health state, coverage bar, role and detailed raw status.
+- Distinguished SUCCESS, NO_DATA, FAILED and NOT_CONFIGURED instead of relying only on the overall PARTIAL status.
+- Reused the same source-health table on the Source Settings page and kept raw engineering dictionaries in an expander.
+- Added regression tests for publisher-level counts and source-state classification.
+
+## 2.2.3 - 2026-07-30
+- Corrected misleading ONLINE sidebar: first-hand Truth status is now based on the actual run.
+- Preserved detailed source failure reasons in source_status, Truth status and Excel source-health notes.
+- Corrected default schema fallback and GTC report title to gtc.trump_event.v2.2.
+- Replaced deprecated Streamlit use_container_width arguments.
+- Cleaned release package caches and generated output.
+
 # 2.2.1 - 2026-07-30
 
 - Restore V2.1 regex word-boundary classification so `airport` no longer triggers the `ai` keyword.
