@@ -18,6 +18,11 @@ sources:
   verification_media:
     publishers: ["Reuters", "Associated Press", "Bloomberg"]
     priority: 2
+  cnbc:
+    enabled: true
+    priority: 3
+    timeout_seconds: 20
+    acquisition: "CNBC_GOOGLE_NEWS_RSS"
   google_news_rss:
     enabled: true
     priority: 3

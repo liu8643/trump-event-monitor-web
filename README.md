@@ -27,3 +27,6 @@ Truth full text requires licensed API or manual import. Search-index data remain
 - 報告：Excel/Word/PDF/JSON/HTML 可一鍵下載。
 - 排程：頁面開啟時可每5分鐘更新；GitHub Scheduled Monitor 每5分鐘 best-effort 執行。
 - 歷史資料庫：可搜尋批次並查看事件、來源、影響與 WatchList；Community Cloud 本機 SQLite 非永久。
+
+## V2.2.2 CNBC來源說明
+原CNBC新聞並非獨立Collector，而是由Google News RSS的Publisher欄位間接取得。V2.2.2新增`CnbcNewsAdapter`，仍使用無金鑰Google News RSS，但將CNBC限定查詢、執行狀態與筆數獨立化；一般Google News RSS及所有原來源均保留，重複資料由既有去重流程處理。

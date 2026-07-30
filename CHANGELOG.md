@@ -29,3 +29,10 @@
 - 新增歷史執行搜尋與事件、來源、市場影響、WatchList 回溯頁。
 - Scheduled Monitor 同步輸出 Excel/JSON/HTML/Word/PDF/WatchList 並保存 SQLite。
 - 擴充 Smoke Test 驗證 7 種輸出及歷史資料庫。
+
+## 2.2.2
+- 確認原 CNBC 資料不是獨立 Adapter，而是由 Google News RSS 的 `<source>CNBC</source>` 間接取得。
+- 新增 `CnbcNewsAdapter`，沿用無金鑰 Google News RSS，但限制來源為 CNBC，提供獨立 source_status/source_counts。
+- 保留一般 Google News RSS，交由既有去重流程排除重複。
+- UI、來源設定、排程與 Excel 新增 CNBC 狀態；新增 `09_來源健康`。
+- 來源零筆狀態改為 `NO_DATA:0`，與失敗 `FAILED:*` 分開。
