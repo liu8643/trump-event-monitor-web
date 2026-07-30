@@ -1,0 +1,9 @@
+V2.3.6 validation
+- pytest: 36 passed, 0 failed
+- compileall: PASS
+- smoke test: PASS (events=4, status=SUCCESS, artifacts=7)
+- fixes verified:
+  1. Rendered Cloudflare challenge is not mislabeled as RENDERED_NO_POSTS.
+  2. ACCESS_DENIED is not mislabeled as OFFICIAL_TIMELINE_NO_POSTS.
+  3. Excel 09_來源健康 contains the same nine-source dashboard as the UI.
+  4. Four-layer Truth evidence remains excluded from Event Engine when ineligible.

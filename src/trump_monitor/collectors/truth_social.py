@@ -273,8 +273,25 @@ class TruthTimelineCollector(SourceAdapter):
                 if rows:
                     self.last_observations.append(self._observation("RENDERED_HTML", "SUCCESS_RENDERED_PARTIAL", f"Rendered posts: {len(rows)}", "畫面可見內容已記錄；可能不是完整時間軸。", True, "PARTIAL_FIRST_PARTY"))
                 else:
-                    status="STATIC_HTML_JS_REQUIRED" if "enable javascript" in body_text.lower() else "RENDERED_NO_POSTS"
-                    self.last_observations.append(self._observation("RENDERED_HTML", status, body_text, "未辨識到可送入事件引擎的公開貼文；請點官方頁查閱。"))
+                    low = body_text.lower()
+                    is_cloudflare = (
+                        "performing security verification" in low
+                        or "security service to protect against malicious bots" in low
+                        or "verify you are not a bot" in low
+                        or "ray id:" in low
+                        or "enable javascript and cookies to continue" in low
+                        or "cloudflare" in low
+                    )
+                    if is_cloudflare:
+                        status = "RENDERED_ACCESS_DENIED_CLOUDFLARE_CHALLENGE"
+                        note = "瀏覽器已成功啟動，但Truth Social顯示Cloudflare安全驗證頁，未取得公開貼文；請點官方頁人工查閱。"
+                    elif "enable javascript" in low:
+                        status = "RENDERED_PAGE_SHELL"
+                        note = "渲染頁仍只有JavaScript提示，未辨識到公開貼文；請點官方頁人工查閱。"
+                    else:
+                        status = "RENDERED_NO_POSTS"
+                        note = "頁面已渲染，但未辨識到可送入事件引擎的公開貼文；請點官方頁查閱。"
+                    self.last_observations.append(self._observation("RENDERED_HTML", status, body_text, note))
         except Exception as exc:
             message = f"{type(exc).__name__}: {exc}"
             status = "RENDERER_BROWSER_MISSING" if "Executable doesn't exist" in message or "playwright install" in message.lower() else "RENDERED_HTML_FAILED"

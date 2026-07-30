@@ -48,3 +48,42 @@ def test_cloudflare_static_html_is_sanitized_and_manual_review_added():
     manual=next(o for o in c.last_observations if o.layer=="MANUAL_REVIEW")
     assert manual.status=="MANUAL_REVIEW_AVAILABLE"
     assert not manual.eligible_for_event_engine
+
+
+class RenderedChallengeLocator:
+    def inner_text(self, timeout=0):
+        return "truthsocial.com\nPerforming security verification\nThis website uses a security service to protect against malicious bots.\nRay ID: test-ray\nPerformance and Security by Cloudflare"
+    def all(self): return []
+
+class RenderedChallengePage:
+    def goto(self,*args,**kwargs): return None
+    def wait_for_timeout(self,*args,**kwargs): return None
+    def locator(self, selector):
+        if selector == "body": return RenderedChallengeLocator()
+        return RenderedChallengeLocator()
+
+class RenderedChallengeBrowser:
+    def new_page(self, **kwargs): return RenderedChallengePage()
+    def close(self): return None
+
+class RenderedChallengeChromium:
+    def launch(self, **kwargs): return RenderedChallengeBrowser()
+
+class RenderedChallengePW:
+    chromium = RenderedChallengeChromium()
+
+class RenderedChallengeContext:
+    def __enter__(self): return RenderedChallengePW()
+    def __exit__(self,*args): return False
+
+def test_rendered_cloudflare_is_not_mislabeled_as_no_posts(monkeypatch):
+    import playwright.sync_api
+    monkeypatch.setattr(playwright.sync_api, "sync_playwright", lambda: RenderedChallengeContext())
+    c=TruthTimelineCollector(session=CloudflareSession(), static_html_enabled=False, chromium_executable="/usr/bin/chromium")
+    now=datetime.now(timezone.utc)
+    rows=c.collect(now-timedelta(hours=72),now)
+    assert rows==[]
+    rendered=next(o for o in c.last_observations if o.layer=="RENDERED_HTML")
+    assert rendered.status=="RENDERED_ACCESS_DENIED_CLOUDFLARE_CHALLENGE"
+    assert "Cloudflare" in rendered.note
+    assert rendered.status!="RENDERED_NO_POSTS"

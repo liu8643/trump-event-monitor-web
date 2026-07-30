@@ -1,3 +1,10 @@
+## 2.3.6
+- Corrected rendered Truth Social Cloudflare verification pages: they are now reported as `RENDERED_ACCESS_DENIED_CLOUDFLARE_CHALLENGE`, not `RENDERED_NO_POSTS`.
+- Corrected `truth_social_status`: ACCESS_DENIED and other degraded states are now `OFFICIAL_TIMELINE_UNAVAILABLE:<reason>`, never `OFFICIAL_TIMELINE_NO_POSTS`.
+- Added regression tests for rendered Cloudflare classification and Truth status semantics.
+- Rebuilt Excel `09_來源健康` so it matches the homepage nine-source dashboard, while retaining raw engineering statuses and the four-layer Truth evidence table.
+- Preserved the four-layer evidence gate and all existing sources/exports.
+
 ## 2.3.5
 - 修正 Playwright 只有套件但缺 Chromium 執行檔：新增 packages.txt、系統 Chromium 偵測與 GitHub Workflow 安裝。
 - Static HTML 遇到 Cloudflare challenge 改為精簡紀錄，不再把整段 challenge script 寫入報表。

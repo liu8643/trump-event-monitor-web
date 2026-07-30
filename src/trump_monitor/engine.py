@@ -72,12 +72,20 @@ class TrumpEventEngine:
             truth_status=f"OFFICIAL_TIMELINE_SUCCESS:{official_count};FALLBACK:{fallback_count}"
         elif official_state.startswith("FAILED"):
             truth_status=f"OFFICIAL_TIMELINE_FAILED:{official_state};FALLBACK:{fallback_count}"
-        elif fallback_count:
+        elif official_state in {"NO_POSTS_IN_72H", "NO_DATA:0"}:
             truth_status=f"OFFICIAL_TIMELINE_NO_POSTS;FALLBACK:{fallback_count}"
+        elif official_state in {"NOT_CONFIGURED", "DISABLED", "SKIPPED"}:
+            truth_status=f"OFFICIAL_TIMELINE_{official_state};FALLBACK:{fallback_count}"
+        elif official_state:
+            # Preserve the actual failure/degraded reason.  ACCESS_DENIED and
+            # Cloudflare challenges must never be mislabeled as "no posts".
+            truth_status=f"OFFICIAL_TIMELINE_UNAVAILABLE:{official_state};FALLBACK:{fallback_count}"
+        elif fallback_count:
+            truth_status=f"OFFICIAL_TIMELINE_UNAVAILABLE:UNKNOWN;FALLBACK:{fallback_count}"
         else:
             truth_status="NO_POSTS_IN_WINDOW"
         return RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.5",prompt_version="TRUMP_PROMPT_V2.3.5",model_version="TRUTH_FOUR_LAYER_V2.3.5",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.3.6",prompt_version="TRUMP_PROMPT_V2.3.6",model_version="TRUTH_FOUR_LAYER_V2.3.6",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])

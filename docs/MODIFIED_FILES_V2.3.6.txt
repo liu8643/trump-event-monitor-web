@@ -1,0 +1,9 @@
+V2.3.6 modified files
+- src/trump_monitor/collectors/truth_social.py
+- src/trump_monitor/engine.py
+- src/trump_monitor/exporters/excel_exporter.py
+- app/streamlit_app.py
+- pyproject.toml
+- tests/test_truth_four_layer.py
+- tests/test_v223_status.py
+- CHANGELOG.md
