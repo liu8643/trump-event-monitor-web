@@ -21,6 +21,9 @@ class AppConfig:
     truth_profile_url: str = "https://truthsocial.com/@realDonaldTrump"
     truth_api_base_url: str = ""
     truth_manual_import_path: str = "data/truth_manual_posts.json"
+    truth_official_timeline_enabled: bool = True
+    truth_official_timeline_timeout: int = 20
+    truth_official_timeline_max_pages: int = 8
 
     @property
     def sample_mode(self) -> bool:
@@ -43,4 +46,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         buy_ready_confidence=float(scoring.get("buy_ready_confidence", .8)), buy_ready_abs_score=int(scoring.get("buy_ready_abs_score", 3)),
         truth_account=str(truth.get("account", "realDonaldTrump")), truth_profile_url=str(truth.get("profile_url", "https://truthsocial.com/@realDonaldTrump")),
         truth_api_base_url=str(truth.get("api_base_url", "")), truth_manual_import_path=str(truth.get("manual_import_path", "data/truth_manual_posts.json")),
+        truth_official_timeline_enabled=bool(truth.get("official_timeline_enabled", True)),
+        truth_official_timeline_timeout=int(truth.get("official_timeline_timeout_seconds", 20)),
+        truth_official_timeline_max_pages=int(truth.get("official_timeline_max_pages", 8)),
     )

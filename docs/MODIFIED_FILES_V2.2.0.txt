@@ -1,0 +1,28 @@
+Added:
+- src/trump_monitor/collectors/truth_social.py: TruthTimelineCollector class (existing classes retained)
+- tests/test_truth_official_timeline.py
+- docs/SOURCE_PRIORITY_V2.2.0.md
+- docs/TEST_RESULTS_V2.2.0.txt
+- docs/MODIFIED_FILES_V2.2.0.txt
+- docs/Excel1_川普72小時事件監控_V2.2_TruthSocialOfficial新增來源_分析改善修改查核驗證正式版_20260730.xlsx
+
+Modified:
+- app/streamlit_app.py
+- scripts/scheduled_run.py
+- src/trump_monitor/config.py
+- src/trump_monitor/engine.py
+- src/trump_monitor/collectors/source_policy.py
+- config.yaml
+- config.example.yaml
+- pyproject.toml
+- README.md
+- CHANGELOG.md
+
+Preserved:
+- TruthOfficialApiAdapter
+- TruthManualImportAdapter
+- TruthSearchIndexAdapter
+- GoogleNewsRssAdapter
+- GNewsAdapter
+- NewsApiAdapter
+- Existing Streamlit pages, exporters, repository, watchlist and workflows

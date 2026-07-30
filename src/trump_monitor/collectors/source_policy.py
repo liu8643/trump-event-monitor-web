@@ -11,7 +11,9 @@ def publisher_tier(name: str) -> tuple[int, str]:
 
 
 SOURCE_PRIORITY_LABELS = [
-    "1. Truth Social 第一手來源（授權API／人工匯入／搜尋索引發現）",
+    "1. Truth Social Official Timeline（@realDonaldTrump 公開時間軸；最高優先）",
+    "1A. Truth Social 授權API／人工匯入（原有來源保留）",
+    "1B. Truth Social 搜尋索引（僅發現用途；原有來源保留）",
     "2. Reuters／AP／Bloomberg 交叉驗證",
     "3. Google News RSS 補充",
     "4. NewsAPI／GNews 補充",

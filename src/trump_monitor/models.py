@@ -72,12 +72,6 @@ class EventCluster(BaseModel):
     primary_source_present: bool = False
     verification_source_count: int = 0
     taiwan_candidates: list[dict] = Field(default_factory=list)
-    key_facts: list[str] = Field(default_factory=list)
-    timeline: list[dict] = Field(default_factory=list)
-    evidence_quality: str = "LIMITED"
-    contradiction_count: int = 0
-    decision_rationale: str = ""
-    gtc_gate: str = "WATCH_ONLY"
 
 
 class RunResult(BaseModel):

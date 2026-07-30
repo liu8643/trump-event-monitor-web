@@ -1,6 +1,9 @@
-# V2.1.0
-- Integrated deep-report narrative with automated evidence/event pipeline.
-- Fixed category-only clustering, airport/AI false positive, Truth search-index evidence inflation, weighted market aggregation, GTC rationale and timeline export.
+# 2.2.0 - 2026-07-30
+- Added `TruthTimelineCollector` as the highest-priority Truth Social Official source.
+- Uses configured official profile URL and the same-host public JSON timeline endpoints.
+- Sorts posts by publication time and filters strictly to the configured 72-hour window.
+- Preserves licensed API, manual import, search index, Google RSS, GNews and NewsAPI behavior.
+- Adds explicit source health/status and regression tests.
 
 # Changelog
 

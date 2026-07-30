@@ -1,0 +1,16 @@
+V2.2.0 validation results (2026-07-30)
+
+PASS  Archive source review: 73 original files inspected
+PASS  python -m compileall -q app src scripts tests
+PASS  pytest -q: 16 tests passed
+PASS  New TruthTimelineCollector tests: 2 passed
+PASS  Account lookup and handle validation (mocked)
+PASS  Profile URL with gsid parsed to https://truthsocial.com + realDonaldTrump
+PASS  72-hour start/end filtering (mocked)
+PASS  Explicit chronological sorting (mocked)
+PASS  DIRECT_POST / Tier 1 / PRIMARY / direct_quote mapping
+PASS  Existing adapter regression tests
+PASS  scripts/smoke_test.py: SAMPLE_ONLY, events=5, status=SUCCESS, artifacts=7
+
+ENV_BLOCKED  Live HTTPS verification was not possible in the build sandbox because DNS is disabled.
+Required deployment acceptance: source_status must contain truth_official_timeline and must report either SUCCESS:n, NO_POSTS, or a specific failure (401/403/429/non-JSON/connection). It must never silently claim official posts were collected.

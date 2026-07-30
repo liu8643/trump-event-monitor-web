@@ -9,6 +9,9 @@ sources:
     priority: 1
     account: "realDonaldTrump"
     profile_url: "https://truthsocial.com/@realDonaldTrump"
+    official_timeline_enabled: true
+    official_timeline_timeout_seconds: 20
+    official_timeline_max_pages: 8
     api_base_url: "" # Licensed Truth API endpoint when contracted
     manual_import_path: "data/truth_manual_posts.json"
     search_index_enabled: true
@@ -19,4 +22,4 @@ sources:
   gnews: {enabled: true, priority: 4}
   newsapi: {enabled: true, priority: 4}
 scoring: {rule_weight: 0.7, ai_weight: 0.3, buy_ready_confidence: 0.8, buy_ready_abs_score: 3}
-export: {output_dir: "output", schema_version: "gtc.trump_event.v1.2"}
+export: {output_dir: "output", schema_version: "gtc.trump_event.v2.2"}

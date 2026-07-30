@@ -1,27 +1,30 @@
 from __future__ import annotations
-import re
+
 from trump_monitor.models import RawItem
 
 KEYWORDS = {
-    "地緣政治／能源": [r"\biran\b",r"\bhormuz\b",r"\bwar\b",r"\bstrike(s|d)?\b",r"\bmilitary\b",r"\boil\b",r"\bisrael\b"],
-    "關稅／國際貿易": [r"\btariff(s)?\b",r"\btrade\b",r"\bcustoms\b",r"\bdut(y|ies)\b"],
-    "美國政治／選舉制度": [r"\bsenate\b",r"\belection\b",r"\bvot(e|ing)\b",r"\bcongress\b",r"\bballot\b",r"\bsupreme court\b",r"\bnominee\b"],
-    "社群訊號／TMTG": [r"truth social",r"\btmtg\b",r"\bdjt\b",r"posting spree"],
-    "AI／半導體": [r"\bartificial intelligence\b",r"\bai\b",r"\bchip(s)?\b",r"\bsemiconductor(s)?\b",r"\bnvidia\b",r"\btsmc\b"],
+    "地緣政治／能源": ["iran", "hormuz", "war", "strike", "military", "oil"],
+    "關稅／國際貿易": ["tariff", "trade", "eu", "canada", "auto"],
+    "美國政治／選舉制度": ["senate", "voting", "save america", "filibuster", "ballot"],
+    "社群訊號／TMTG": ["truth social", "ai image", "posting spree", "tmtg", "djt"],
+    "AI／半導體": ["semiconductor", "nvidia", "tsmc", "chip", "ai"],
 }
 
+
 def classify_category(item: RawItem) -> str:
-    text=f"{item.title} {item.body}".lower()
-    if re.search(r"truth social|\btmtg\b|posting spree", text): return "社群訊號／TMTG"
-    scores={cat:sum(1 for pattern in patterns if re.search(pattern,text)) for cat,patterns in KEYWORDS.items()}
-    best,count=max(scores.items(),key=lambda kv:kv[1])
-    return best if count>0 else "其他／一般政治"
+    text = f"{item.title} {item.body}".lower()
+    scores = {category: sum(1 for k in keys if k in text) for category, keys in KEYWORDS.items()}
+    best, count = max(scores.items(), key=lambda kv: kv[1])
+    return best if count > 0 else "其他／一般政治"
+
 
 def classify_source_type(item: RawItem) -> str:
-    # Search-index discovery is not the original Truth post and must not receive direct evidence weight.
-    if item.acquisition_method == "SEARCH_INDEX": return "UNCONFIRMED"
-    if item.acquisition_method in {"LICENSED_API","MANUAL_IMPORT"} and "truth" in item.publisher_group.lower(): return "DIRECT_POST"
-    if item.source_name.lower() in {"white house","federal register","u.s. treasury"}: return "OFFICIAL_POLICY"
-    if item.source_confidence < .45: return "UNCONFIRMED"
-    if any(k in item.title.lower() for k in ["opinion","analysis","commentary"]): return "COMMENTARY"
+    if "truthsocial.com" in item.url.lower() or item.source_name.lower() == "truth social":
+        return "DIRECT_POST"
+    if item.source_name.lower() in {"white house", "federal register", "u.s. treasury"}:
+        return "OFFICIAL_POLICY"
+    if item.source_confidence < 0.45:
+        return "UNCONFIRMED"
+    if any(k in item.title.lower() for k in ["opinion", "analysis", "commentary"]):
+        return "COMMENTARY"
     return "MEDIA_REPORT"
