@@ -18,6 +18,7 @@ from trump_monitor.collectors.sample import SampleAdapter
 from trump_monitor.collectors.gnews import GNewsAdapter
 from trump_monitor.collectors.newsapi import NewsApiAdapter
 from trump_monitor.collectors.google_news_rss import GoogleNewsRssAdapter
+from trump_monitor.collectors.cnbc import CnbcNewsAdapter
 from trump_monitor.collectors.truth_social import TruthTimelineCollector, TruthOfficialApiAdapter, TruthManualImportAdapter, TruthSearchIndexAdapter
 from trump_monitor.config import load_config
 from trump_monitor.engine import TrumpEventEngine
@@ -34,7 +35,7 @@ except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.2.1"
+APP_VERSION = "2.2.2"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -68,6 +69,9 @@ def build_adapters(mode: str):
         adapters.append(TruthOfficialApiAdapter(truth_api_url, config.truth_account))
     adapters.append(TruthManualImportAdapter(RUNTIME_TRUTH_PATH if RUNTIME_TRUTH_PATH.exists() else ROOT / config.truth_manual_import_path, config.truth_account))
     adapters.append(TruthSearchIndexAdapter(config.truth_account))
+    # CNBC originally arrived indirectly inside Google News RSS. V2.2.2 gives it an explicit adapter/status while retaining the general RSS source.
+    if config.cnbc_enabled:
+        adapters.append(CnbcNewsAdapter(timeout=config.cnbc_timeout))
     # Verification and supplemental media follow.
     adapters.append(GoogleNewsRssAdapter())
     if os.getenv("GNEWS_API_KEY"):
@@ -110,7 +114,7 @@ with st.sidebar:
     if mode == "SAMPLE":
         st.warning("SAMPLE 是測試資料，不可作投資分析。")
     else:
-        st.success("ONLINE：Truth Social 為第一手來源；Reuters/AP/Bloomberg 交叉驗證；Google RSS、NewsAPI、GNews補充。")
+        st.success("ONLINE：Truth Social 為第一手來源；Reuters/AP/Bloomberg/CNBC 交叉驗證；Google RSS、NewsAPI、GNews補充。")
     auto5=st.checkbox("每5分鐘自動更新（頁面開啟時）",value=False)
     if auto5 and st_autorefresh: st_autorefresh(interval=300000,key="v2_auto_refresh")
     if st.button("開始／重新分析", type="primary", use_container_width=True) or (auto5 and "result" in st.session_state):
@@ -300,7 +304,7 @@ elif page == "來源設定":
     st.header("來源設定與健康")
     st.subheader("正式資料來源優先順序")
     st.markdown(f"1. **Truth Social Official Timeline**：[{config.truth_account}]({config.truth_profile_url}) 公開時間軸 → 時間排序 → 72小時篩選\n2. **原有Truth來源保留**：授權API → 人工匯入 → 搜尋索引發現\n3. **Reuters／AP／Bloomberg**：交叉驗證\n4. **Google News RSS**：補充\n5. **NewsAPI／GNews**：補充")
-    st.write({"Truth Social Official URL":config.truth_profile_url,"Truth Official Timeline啟用":config.truth_official_timeline_enabled,"Truth API Token":bool(os.getenv("TRUTH_API_TOKEN")),"Truth API Endpoint":bool(os.getenv("TRUTH_API_BASE_URL") or config.truth_api_base_url),"Truth人工匯入":str(ROOT/config.truth_manual_import_path),"Google News RSS":True,"GNews Key":bool(os.getenv("GNEWS_API_KEY")),"NewsAPI Key":bool(os.getenv("NEWSAPI_API_KEY"))})
+    st.write({"Truth Social Official URL":config.truth_profile_url,"Truth Official Timeline啟用":config.truth_official_timeline_enabled,"Truth API Token":bool(os.getenv("TRUTH_API_TOKEN")),"Truth API Endpoint":bool(os.getenv("TRUTH_API_BASE_URL") or config.truth_api_base_url),"Truth人工匯入":str(ROOT/config.truth_manual_import_path),"CNBC來源啟用":config.cnbc_enabled,"Google News RSS":True,"GNews Key":bool(os.getenv("GNEWS_API_KEY")),"NewsAPI Key":bool(os.getenv("NEWSAPI_API_KEY"))})
     if result := get_result():
         st.write("來源狀態", result.source_status)
         st.write("來源筆數", result.source_counts)
