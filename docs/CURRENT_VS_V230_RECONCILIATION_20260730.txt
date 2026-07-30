@@ -1,0 +1,15 @@
+Current GitHub repository vs V2.3.0 reconciliation
+==================================================
+Functional source differences found: 1
+- app/streamlit_app.py was still V2.2.2 while engine/source_health/tests were V2.3.0.
+
+Corrections applied:
+- Restored V2.3.0 source-health dashboard import and homepage rendering.
+- Restored dynamic Truth Official success/fallback message.
+- Restored source-health table on Source Settings page.
+- Replaced deprecated use_container_width with width='stretch'.
+- Restored .gitignore and .env.example.
+- Removed __pycache__, .pytest_cache, *.pyc, output.
+- Replaced browser-upload-mangled #U... documentation filenames with Unicode filenames.
+
+Core engine, collectors, exporters, models, tests and configuration were byte-identical to V2.3.0.
