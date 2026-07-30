@@ -1,0 +1,691 @@
+{
+  "run_id": "TRUMP-RUN-20260728-080000",
+  "started_at": "2026-07-28T00:00:00Z",
+  "completed_at": "2026-07-30T06:36:52.417359Z",
+  "lookback_hours": 72,
+  "timezone": "Asia/Taipei",
+  "status": "SUCCESS",
+  "rule_version": "TRUMP_RULE_V2.2.2",
+  "prompt_version": "TRUMP_PROMPT_V2.2.2",
+  "model_version": "TRUTH_OFFICIAL_TIMELINE_CNBC_V2.2.2",
+  "schema_version": "gtc.trump_event.v1.2",
+  "source_status": {
+    "sample": "SUCCESS:6"
+  },
+  "source_counts": {
+    "sample": 6
+  },
+  "source_priority": [
+    "1. Truth Social Official Timeline（@realDonaldTrump 公開時間軸；最高優先）",
+    "1A. Truth Social 授權API／人工匯入（原有來源保留）",
+    "1B. Truth Social 搜尋索引（僅發現用途；原有來源保留）",
+    "2. Reuters／AP／Bloomberg 交叉驗證",
+    "3. CNBC 財經媒體驗證（原Google RSS資料獨立來源化）",
+    "4. Google News RSS 補充",
+    "5. NewsAPI／GNews 補充"
+  ],
+  "data_mode": "SAMPLE",
+  "truth_social_status": "NO_POSTS_IN_WINDOW",
+  "events": [
+    {
+      "event_id": "TRUMP-20260728-001",
+      "topic": "Trump praises sweeping tariffs while in Michigan",
+      "category": "關稅／國際貿易",
+      "summary": "川普政府持續推動新關稅措施，汽車與跨境供應鏈成為焦點。",
+      "first_seen": "2026-07-25T20:10:00+08:00",
+      "last_seen": "2026-07-27T18:00:00+08:00",
+      "source_count": 2,
+      "sources": [
+        {
+          "raw_item_id": "RAW-003",
+          "source_name": "Associated Press",
+          "publisher_group": "AP",
+          "source_type": "MEDIA_REPORT",
+          "published_at": "2026-07-27T18:00:00+08:00",
+          "title": "Trump praises sweeping tariffs while in Michigan",
+          "body": "川普政府持續推動新關稅措施，汽車與跨境供應鏈成為焦點。",
+          "url": "https://apnews.com/article/sample-tariff",
+          "source_confidence": 0.88,
+          "direct_quote": true,
+          "source_tier": 4,
+          "source_role": "SUPPLEMENT",
+          "acquisition_method": "SAMPLE",
+          "account_handle": "",
+          "content_status": "SNIPPET_OR_FEED_SUMMARY",
+          "ai_summary_zh": "川普政府持續推動新關稅措施，汽車與跨境供應鏈成為焦點。",
+          "ai_sentiment": "偏空",
+          "ai_provider": "RULE_EXTRACTIVE_V2",
+          "ai_summary_status": "EXTRACTIVE_SNIPPET"
+        },
+        {
+          "raw_item_id": "RAW-004",
+          "source_name": "Wall Street Journal",
+          "publisher_group": "WSJ",
+          "source_type": "MEDIA_REPORT",
+          "published_at": "2026-07-25T20:10:00+08:00",
+          "title": "Trump threatens new tariffs on EU over tech fines",
+          "body": "歐洲科技罰款與關稅政策增加供應鏈不確定性。",
+          "url": "https://www.wsj.com/economy/trade/sample",
+          "source_confidence": 0.78,
+          "direct_quote": false,
+          "source_tier": 4,
+          "source_role": "SUPPLEMENT",
+          "acquisition_method": "SAMPLE",
+          "account_handle": "",
+          "content_status": "SNIPPET_OR_FEED_SUMMARY",
+          "ai_summary_zh": "歐洲科技罰款與關稅政策增加供應鏈不確定性。",
+          "ai_sentiment": "偏空",
+          "ai_provider": "RULE_EXTRACTIVE_V2",
+          "ai_summary_status": "EXTRACTIVE_SNIPPET"
+        }
+      ],
+      "score": {
+        "rule_score": 5.0,
+        "ai_score": 0.0,
+        "final_score": 1.75,
+        "confidence": 0.732,
+        "importance": 3,
+        "breakdown": {
+          "market_sensitive": 2.0,
+          "verification_source": 2.0,
+          "multi_source": 1.0
+        }
+      },
+      "impacts": [
+        {
+          "asset": "美股",
+          "rule_score": -1,
+          "ai_score": -1,
+          "final_score": -1,
+          "confidence": 0.732,
+          "direction": "中性偏空",
+          "rationale": "成本與供應鏈不確定性",
+          "beneficiary": "美國在地製造",
+          "negative": "跨境科技、汽車",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "台股",
+          "rule_score": -1,
+          "ai_score": -1,
+          "final_score": -1,
+          "confidence": 0.732,
+          "direction": "偏空",
+          "rationale": "出口導向供應鏈受壓",
+          "beneficiary": "在美設廠供應鏈",
+          "negative": "電子代工、汽車零組件",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "原油",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.732,
+          "direction": "中性",
+          "rationale": "需求與通膨效果互抵",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "黃金",
+          "rule_score": 1,
+          "ai_score": 1,
+          "final_score": 1,
+          "confidence": 0.732,
+          "direction": "中性偏多",
+          "rationale": "政策不確定性",
+          "beneficiary": "黃金",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "美元",
+          "rule_score": 1,
+          "ai_score": 1,
+          "final_score": 1,
+          "confidence": 0.732,
+          "direction": "中性偏多",
+          "rationale": "貿易風險與資金避險",
+          "beneficiary": "美元",
+          "negative": "非美貨幣",
+          "horizon": "1-5 個交易日"
+        }
+      ],
+      "beneficiary_sectors": [
+        "在美設廠供應鏈",
+        "美元",
+        "美國在地製造",
+        "黃金"
+      ],
+      "negative_sectors": [
+        "汽車",
+        "汽車零組件",
+        "跨境科技",
+        "電子代工",
+        "非美貨幣"
+      ],
+      "battle_action": "WATCH",
+      "event_label": "關稅_國際貿易",
+      "data_freshness": "SAMPLE",
+      "primary_source_present": false,
+      "verification_source_count": 0,
+      "taiwan_candidates": [
+        {
+          "ticker": "9955",
+          "name": "佳龍",
+          "score": 2.205,
+          "reasons": "TRUMP-20260728-001:黃金；TRUMP-20260728-004:黃金",
+          "rank": 1,
+          "action": "WATCH"
+        }
+      ]
+    },
+    {
+      "event_id": "TRUMP-20260728-004",
+      "topic": "Trump says US and Tehran having good talks as drones hit Iran's neighbours",
+      "category": "地緣政治／能源",
+      "summary": "川普表示美國與伊朗正進行良好談判，但外交失敗時仍保留軍事選項。",
+      "first_seen": "2026-07-27T21:30:00+08:00",
+      "last_seen": "2026-07-27T21:30:00+08:00",
+      "source_count": 1,
+      "sources": [
+        {
+          "raw_item_id": "RAW-001",
+          "source_name": "Reuters",
+          "publisher_group": "Reuters",
+          "source_type": "MEDIA_REPORT",
+          "published_at": "2026-07-27T21:30:00+08:00",
+          "title": "Trump says US and Tehran having good talks as drones hit Iran's neighbours",
+          "body": "川普表示美國與伊朗正進行良好談判，但外交失敗時仍保留軍事選項。",
+          "url": "https://www.reuters.com/world/middle-east/example-iran-2026-07-27/",
+          "source_confidence": 0.92,
+          "direct_quote": true,
+          "source_tier": 4,
+          "source_role": "SUPPLEMENT",
+          "acquisition_method": "SAMPLE",
+          "account_handle": "",
+          "content_status": "SNIPPET_OR_FEED_SUMMARY",
+          "ai_summary_zh": "川普表示美國與伊朗正進行良好談判，但外交失敗時仍保留軍事選項。",
+          "ai_sentiment": "中性",
+          "ai_provider": "RULE_EXTRACTIVE_V2",
+          "ai_summary_status": "EXTRACTIVE_SNIPPET"
+        }
+      ],
+      "score": {
+        "rule_score": 4.0,
+        "ai_score": 0.0,
+        "final_score": 1.4,
+        "confidence": 0.66,
+        "importance": 3,
+        "breakdown": {
+          "market_sensitive": 2.0,
+          "verification_source": 2.0
+        }
+      },
+      "impacts": [
+        {
+          "asset": "美股",
+          "rule_score": -1,
+          "ai_score": -1,
+          "final_score": -1,
+          "confidence": 0.66,
+          "direction": "中性偏空",
+          "rationale": "地緣風險提高風險溢價",
+          "beneficiary": "軍工、能源",
+          "negative": "航空、運輸",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "台股",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.66,
+          "direction": "中性偏空",
+          "rationale": "外資風險偏好可能下降",
+          "beneficiary": "軍工、能源",
+          "negative": "高Beta電子",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "原油",
+          "rule_score": 2,
+          "ai_score": 2,
+          "final_score": 2,
+          "confidence": 0.66,
+          "direction": "偏多",
+          "rationale": "供應中斷風險",
+          "beneficiary": "上游能源、油輪",
+          "negative": "航空、運輸",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "黃金",
+          "rule_score": 1,
+          "ai_score": 1,
+          "final_score": 1,
+          "confidence": 0.66,
+          "direction": "偏多",
+          "rationale": "避險需求上升",
+          "beneficiary": "黃金、貴金屬",
+          "negative": "高Beta資產",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "美元",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.66,
+          "direction": "中性偏多",
+          "rationale": "避險美元需求",
+          "beneficiary": "美元資產",
+          "negative": "新興市場貨幣",
+          "horizon": "1-5 個交易日"
+        }
+      ],
+      "beneficiary_sectors": [
+        "上游能源",
+        "油輪",
+        "美元資產",
+        "能源",
+        "貴金屬",
+        "軍工",
+        "黃金"
+      ],
+      "negative_sectors": [
+        "新興市場貨幣",
+        "航空",
+        "運輸",
+        "高Beta資產",
+        "高Beta電子"
+      ],
+      "battle_action": "WATCH",
+      "event_label": "地緣政治_能源",
+      "data_freshness": "SAMPLE",
+      "primary_source_present": false,
+      "verification_source_count": 0,
+      "taiwan_candidates": [
+        {
+          "ticker": "9955",
+          "name": "佳龍",
+          "score": 2.205,
+          "reasons": "TRUMP-20260728-001:黃金；TRUMP-20260728-004:黃金",
+          "rank": 1,
+          "action": "WATCH"
+        },
+        {
+          "ticker": "6505",
+          "name": "台塑化",
+          "score": 1.8479999999999999,
+          "reasons": "TRUMP-20260728-004:上游能源；TRUMP-20260728-004:能源",
+          "rank": 2,
+          "action": "WATCH"
+        },
+        {
+          "ticker": "9937",
+          "name": "全國",
+          "score": 1.8479999999999999,
+          "reasons": "TRUMP-20260728-004:上游能源；TRUMP-20260728-004:能源",
+          "rank": 3,
+          "action": "WATCH"
+        },
+        {
+          "ticker": "2634",
+          "name": "漢翔",
+          "score": 0.9239999999999999,
+          "reasons": "TRUMP-20260728-004:軍工",
+          "rank": 4,
+          "action": "WATCH"
+        },
+        {
+          "ticker": "8033",
+          "name": "雷虎",
+          "score": 0.9239999999999999,
+          "reasons": "TRUMP-20260728-004:軍工",
+          "rank": 5,
+          "action": "WATCH"
+        },
+        {
+          "ticker": "6753",
+          "name": "龍德造船",
+          "score": 0.9239999999999999,
+          "reasons": "TRUMP-20260728-004:軍工",
+          "rank": 6,
+          "action": "WATCH"
+        },
+        {
+          "ticker": "2618",
+          "name": "長榮航",
+          "score": -0.9239999999999999,
+          "reasons": "TRUMP-20260728-004:航空(風險)",
+          "rank": 7,
+          "action": "WATCH"
+        },
+        {
+          "ticker": "2610",
+          "name": "華航",
+          "score": -0.9239999999999999,
+          "reasons": "TRUMP-20260728-004:航空(風險)",
+          "rank": 8,
+          "action": "WATCH"
+        }
+      ]
+    },
+    {
+      "event_id": "TRUMP-20260728-003",
+      "topic": "Trump demands Senate cancel August break until it passes voting bill",
+      "category": "美國政治／選舉制度",
+      "summary": "涉及參議院議程、投票法案與政治動員，直接市場影響有限。",
+      "first_seen": "2026-07-27T17:20:00+08:00",
+      "last_seen": "2026-07-27T17:20:00+08:00",
+      "source_count": 1,
+      "sources": [
+        {
+          "raw_item_id": "RAW-005",
+          "source_name": "Associated Press",
+          "publisher_group": "AP",
+          "source_type": "MEDIA_REPORT",
+          "published_at": "2026-07-27T17:20:00+08:00",
+          "title": "Trump demands Senate cancel August break until it passes voting bill",
+          "body": "涉及參議院議程、投票法案與政治動員，直接市場影響有限。",
+          "url": "https://apnews.com/article/sample-voting",
+          "source_confidence": 0.86,
+          "direct_quote": true,
+          "source_tier": 4,
+          "source_role": "SUPPLEMENT",
+          "acquisition_method": "SAMPLE",
+          "account_handle": "",
+          "content_status": "SNIPPET_OR_FEED_SUMMARY",
+          "ai_summary_zh": "涉及參議院議程、投票法案與政治動員，直接市場影響有限。",
+          "ai_sentiment": "中性",
+          "ai_provider": "RULE_EXTRACTIVE_V2",
+          "ai_summary_status": "EXTRACTIVE_SNIPPET"
+        }
+      ],
+      "score": {
+        "rule_score": 2.0,
+        "ai_score": 0.0,
+        "final_score": 0.7,
+        "confidence": 0.639,
+        "importance": 2,
+        "breakdown": {
+          "verification_source": 2.0
+        }
+      },
+      "impacts": [
+        {
+          "asset": "美股",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.639,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "台股",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.639,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "原油",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.639,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "黃金",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.639,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "美元",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.639,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        }
+      ],
+      "beneficiary_sectors": [],
+      "negative_sectors": [],
+      "battle_action": "WATCH",
+      "event_label": "美國政治_選舉制度",
+      "data_freshness": "SAMPLE",
+      "primary_source_present": false,
+      "verification_source_count": 0,
+      "taiwan_candidates": []
+    },
+    {
+      "event_id": "TRUMP-20260728-002",
+      "topic": "Truth Social 原始貼文：伊朗和平協議相關訊號",
+      "category": "社群訊號／TMTG",
+      "summary": "公開貼文顯示談判與軍事選項並存。",
+      "first_seen": "2026-07-26T22:40:00+08:00",
+      "last_seen": "2026-07-27T15:00:00+08:00",
+      "source_count": 2,
+      "sources": [
+        {
+          "raw_item_id": "RAW-002",
+          "source_name": "Truth Social",
+          "publisher_group": "Truth Social",
+          "source_type": "MEDIA_REPORT",
+          "published_at": "2026-07-27T15:00:00+08:00",
+          "title": "Truth Social 原始貼文：伊朗和平協議相關訊號",
+          "body": "公開貼文顯示談判與軍事選項並存。",
+          "url": "https://truthsocial.com/@realDonaldTrump/posts/sample",
+          "source_confidence": 0.9,
+          "direct_quote": true,
+          "source_tier": 4,
+          "source_role": "SUPPLEMENT",
+          "acquisition_method": "SAMPLE",
+          "account_handle": "",
+          "content_status": "SNIPPET_OR_FEED_SUMMARY",
+          "ai_summary_zh": "公開貼文顯示談判與軍事選項並存。",
+          "ai_sentiment": "中性",
+          "ai_provider": "RULE_EXTRACTIVE_V2",
+          "ai_summary_status": "EXTRACTIVE_SNIPPET"
+        },
+        {
+          "raw_item_id": "RAW-006",
+          "source_name": "Daily Beast",
+          "publisher_group": "Daily Beast",
+          "source_type": "MEDIA_REPORT",
+          "published_at": "2026-07-26T22:40:00+08:00",
+          "title": "Donald Trump goes on Truth Social posting spree with AI images",
+          "body": "密集貼文與AI圖片主要屬社群活動與政治宣傳。",
+          "url": "https://www.thedailybeast.com/sample-posting-spree",
+          "source_confidence": 0.58,
+          "direct_quote": false,
+          "source_tier": 4,
+          "source_role": "SUPPLEMENT",
+          "acquisition_method": "SAMPLE",
+          "account_handle": "",
+          "content_status": "SNIPPET_OR_FEED_SUMMARY",
+          "ai_summary_zh": "密集貼文與AI圖片主要屬社群活動與政治宣傳。",
+          "ai_sentiment": "中性",
+          "ai_provider": "RULE_EXTRACTIVE_V2",
+          "ai_summary_status": "EXTRACTIVE_SNIPPET"
+        }
+      ],
+      "score": {
+        "rule_score": 1.0,
+        "ai_score": 0.0,
+        "final_score": 0.35,
+        "confidence": 0.701,
+        "importance": 1,
+        "breakdown": {
+          "multi_source": 1.0
+        }
+      },
+      "impacts": [
+        {
+          "asset": "美股",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.701,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "台股",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.701,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "原油",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.701,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "黃金",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.701,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        },
+        {
+          "asset": "美元",
+          "rule_score": 0,
+          "ai_score": 0,
+          "final_score": 0,
+          "confidence": 0.701,
+          "direction": "中性",
+          "rationale": "直接市場傳導有限",
+          "beneficiary": "",
+          "negative": "",
+          "horizon": "1-5 個交易日"
+        }
+      ],
+      "beneficiary_sectors": [],
+      "negative_sectors": [],
+      "battle_action": "WATCH",
+      "event_label": "社群訊號_TMTG",
+      "data_freshness": "SAMPLE",
+      "primary_source_present": false,
+      "verification_source_count": 0,
+      "taiwan_candidates": []
+    }
+  ],
+  "warnings": [],
+  "taiwan_candidates": [
+    {
+      "ticker": "9955",
+      "name": "佳龍",
+      "score": 2.205,
+      "reasons": "TRUMP-20260728-001:黃金；TRUMP-20260728-004:黃金",
+      "rank": 1,
+      "action": "WATCH"
+    },
+    {
+      "ticker": "6505",
+      "name": "台塑化",
+      "score": 1.8479999999999999,
+      "reasons": "TRUMP-20260728-004:上游能源；TRUMP-20260728-004:能源",
+      "rank": 2,
+      "action": "WATCH"
+    },
+    {
+      "ticker": "9937",
+      "name": "全國",
+      "score": 1.8479999999999999,
+      "reasons": "TRUMP-20260728-004:上游能源；TRUMP-20260728-004:能源",
+      "rank": 3,
+      "action": "WATCH"
+    },
+    {
+      "ticker": "2634",
+      "name": "漢翔",
+      "score": 0.9239999999999999,
+      "reasons": "TRUMP-20260728-004:軍工",
+      "rank": 4,
+      "action": "WATCH"
+    },
+    {
+      "ticker": "8033",
+      "name": "雷虎",
+      "score": 0.9239999999999999,
+      "reasons": "TRUMP-20260728-004:軍工",
+      "rank": 5,
+      "action": "WATCH"
+    },
+    {
+      "ticker": "6753",
+      "name": "龍德造船",
+      "score": 0.9239999999999999,
+      "reasons": "TRUMP-20260728-004:軍工",
+      "rank": 6,
+      "action": "WATCH"
+    },
+    {
+      "ticker": "2618",
+      "name": "長榮航",
+      "score": -0.9239999999999999,
+      "reasons": "TRUMP-20260728-004:航空(風險)",
+      "rank": 7,
+      "action": "WATCH"
+    },
+    {
+      "ticker": "2610",
+      "name": "華航",
+      "score": -0.9239999999999999,
+      "reasons": "TRUMP-20260728-004:航空(風險)",
+      "rank": 8,
+      "action": "WATCH"
+    }
+  ],
+  "watchlist_paths": []
+}

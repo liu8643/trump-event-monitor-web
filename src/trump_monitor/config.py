@@ -24,6 +24,8 @@ class AppConfig:
     truth_official_timeline_enabled: bool = True
     truth_official_timeline_timeout: int = 20
     truth_official_timeline_max_pages: int = 8
+    cnbc_enabled: bool = True
+    cnbc_timeout: int = 20
 
     @property
     def sample_mode(self) -> bool:
@@ -36,6 +38,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
     data = data or {}
     app, scoring, export, sources = data.get("app", {}), data.get("scoring", {}), data.get("export", {}), data.get("sources", {})
     truth = sources.get("truth_social", {})
+    cnbc = sources.get("cnbc", {})
     mode = str(app.get("mode", "AUTO")).upper()
     if mode not in {"AUTO", "ONLINE", "SAMPLE"}: mode = "AUTO"
     return AppConfig(
@@ -49,4 +52,6 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         truth_official_timeline_enabled=bool(truth.get("official_timeline_enabled", True)),
         truth_official_timeline_timeout=int(truth.get("official_timeline_timeout_seconds", 20)),
         truth_official_timeline_max_pages=int(truth.get("official_timeline_max_pages", 8)),
+        cnbc_enabled=bool(cnbc.get("enabled", True)),
+        cnbc_timeout=int(cnbc.get("timeout_seconds", 20)),
     )

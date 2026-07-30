@@ -148,6 +148,29 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     ]: ws8.append(r)
     _body(ws8,4,11,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
 
+    ws9 = wb.create_sheet("09_來源健康")
+    _style_title(ws9,6,"來源執行狀態與筆數｜CNBC獨立可追溯")
+    _header(ws9,3,["來源鍵","狀態","筆數","來源定位","是否獨立執行","備註"])
+    labels={
+      "truth_official_timeline":"Truth Social Official Timeline",
+      "truth_official_api":"Truth Social Licensed API",
+      "truth_manual_import":"Truth Social Manual Import",
+      "truth_search_index":"Truth Social Search Index",
+      "cnbc":"CNBC（Google News RSS source filter）",
+      "google_news_rss":"Google News RSS",
+      "gnews":"GNews",
+      "newsapi":"NewsAPI",
+    }
+    all_keys=list(dict.fromkeys(list(labels)+list(result.source_status)))
+    for key in all_keys:
+        status=result.source_status.get(key,"NOT_CONFIGURED")
+        count=result.source_counts.get(key,0)
+        role="財經媒體驗證" if key=="cnbc" else "來源蒐集／補充"
+        independent="是" if key in result.source_status else "否"
+        note="原CNBC資料曾包含在google_news_rss內；V2.2.2新增獨立狀態與筆數。" if key=="cnbc" else ""
+        ws9.append([key,status,count,labels.get(key,key),independent,note])
+    _body(ws9,4,3+len(all_keys),6); _widths(ws9,{1:28,2:24,3:12,4:44,5:18,6:65}); ws9.freeze_panes="A4"
+
     tmp = out.with_suffix(out.suffix + ".tmp")
     wb.save(tmp)
     tmp.replace(out)

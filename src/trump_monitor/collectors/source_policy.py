@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-VERIFICATION_PUBLISHERS = {"reuters", "associated press", "ap", "bloomberg"}
+VERIFICATION_PUBLISHERS = {"reuters", "associated press", "ap", "bloomberg", "cnbc"}
 
 
 def publisher_tier(name: str) -> tuple[int, str]:
     value = name.strip().lower()
-    if value in VERIFICATION_PUBLISHERS or any(x in value for x in ("reuters", "associated press", "bloomberg")):
+    if value in VERIFICATION_PUBLISHERS or any(x in value for x in ("reuters", "associated press", "bloomberg", "cnbc")):
         return 2, "VERIFICATION"
     return 3, "SUPPLEMENT"
 
@@ -15,6 +15,7 @@ SOURCE_PRIORITY_LABELS = [
     "1A. Truth Social 授權API／人工匯入（原有來源保留）",
     "1B. Truth Social 搜尋索引（僅發現用途；原有來源保留）",
     "2. Reuters／AP／Bloomberg 交叉驗證",
-    "3. Google News RSS 補充",
-    "4. NewsAPI／GNews 補充",
+    "3. CNBC 財經媒體驗證（原Google RSS資料獨立來源化）",
+    "4. Google News RSS 補充",
+    "5. NewsAPI／GNews 補充",
 ]

@@ -25,7 +25,7 @@ class TrumpEventEngine:
         raw=[]; source_status={}; source_counts={}; warnings=[]
         for adapter in self.adapters:
             try:
-                rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows); source_status[adapter.name]=f"SUCCESS:{len(rows)}"
+                rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows); source_status[adapter.name]=(f"SUCCESS:{len(rows)}" if rows else "NO_DATA:0")
             except Exception as exc:
                 source_counts[adapter.name]=0; source_status[adapter.name]=f"FAILED:{type(exc).__name__}"; warnings.append(f"{adapter.name}: {exc}")
         unique,_=deduplicate(raw); grouped=defaultdict(list)
@@ -71,6 +71,6 @@ class TrumpEventEngine:
             truth_status="NO_POSTS_IN_WINDOW"
         return RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.2.1",prompt_version="TRUMP_PROMPT_V2.2.1",model_version="TRUTH_OFFICIAL_TIMELINE_V2.2.1",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.2.2",prompt_version="TRUMP_PROMPT_V2.2.2",model_version="TRUTH_OFFICIAL_TIMELINE_CNBC_V2.2.2",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])
