@@ -1,0 +1,25 @@
+V2.2.1 modified/new files
+
+Modified:
+- src/trump_monitor/classifier.py
+- src/trump_monitor/ai_service.py
+- src/trump_monitor/collectors/truth_social.py
+- src/trump_monitor/engine.py
+- app/streamlit_app.py
+- pyproject.toml
+- CHANGELOG.md
+
+Added/restored:
+- src/trump_monitor/clustering.py
+- tests/test_v21_integration.py
+- docs/TEST_RESULTS_V2.2.1.txt
+- docs/MODIFIED_FILES_V2.2.1.txt
+- docs/Excel1_川普72小時事件監控_V2.2.1_三項分類回歸修正_分析改善修改查核驗證正式版_20260730.xlsx
+
+Preserved:
+- TruthTimelineCollector (V2.2 Official Timeline)
+- TruthOfficialApiAdapter
+- TruthManualImportAdapter
+- TruthSearchIndexAdapter
+- Google News RSS / NewsAPI / GNews sources
+- existing Streamlit pages, exporters, SQLite, WatchList, workflows

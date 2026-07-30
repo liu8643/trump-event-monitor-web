@@ -1,0 +1,18 @@
+Trump 72-hour Event Monitor V2.2.1 regression correction
+Date: 2026-07-30
+
+Scope
+- Restore V2.1 classifier fixes without removing V2.2 Truth Social Official Timeline.
+- Restore regex word-boundary classification for AI keywords.
+- Restore Truth Search Index evidence downgrade.
+- Restore Truth Social/TMTG classification priority.
+- Restore V2.1 regression tests and clustering helper.
+
+Verification
+- pytest: 21 passed, 0 failed
+- python -m compileall -q src app scripts tests: PASS
+- python scripts/smoke_test.py: PASS
+  Run ID: TRUMP-RUN-20260728-080000
+  Events: 4
+  Status: SUCCESS
+  Artifacts: 7

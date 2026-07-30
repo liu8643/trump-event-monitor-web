@@ -243,7 +243,7 @@ class TruthSearchIndexAdapter(SourceAdapter):
             # Only accept records whose title/snippet/source explicitly indicates Truth Social or direct profile.
             if "truth social" not in (title+" "+desc).lower() and "truthsocial" not in link.lower(): continue
             rid="TRUTH-IDX-"+sha256((link+pub).encode()).hexdigest()[:16]
-            out.append(RawItem(raw_item_id=rid,source_name="Truth Social (Search Index)",publisher_group="Truth Social",source_type="DIRECT_POST",
-                published_at=dt,title=title,body=desc,url=link,source_confidence=.72,direct_quote=False,source_tier=1,source_role="PRIMARY",
+            out.append(RawItem(raw_item_id=rid,source_name="Truth Social (Search Index)",publisher_group="Truth Social",source_type="UNCONFIRMED",
+                published_at=dt,title=title,body=desc,url=link,source_confidence=.58,direct_quote=False,source_tier=4,source_role="SUPPLEMENT",
                 acquisition_method="SEARCH_INDEX",account_handle=self.account))
         return out

@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, os
+import json, os, re
 from dataclasses import dataclass
 import requests
 
@@ -12,35 +12,36 @@ class AIAnalysis:
     provider: str
     summary_status: str
 
-KEYWORDS = {
-    "關稅／國際貿易": ["tariff", "trade", "customs", "duty"],
-    "地緣政治／能源": ["iran", "israel", "war", "oil", "strait", "military"],
-    "AI／半導體": ["ai", "chip", "semiconductor", "nvidia"],
-    "美國政治／選舉制度": ["senate", "election", "vote", "congress"],
-    "社群訊號／TMTG": ["truth social", "tmtg", "djt"],
+KEYWORDS={
+ "關稅／國際貿易":[r"\btariff(s)?\b",r"\btrade\b",r"\bcustoms\b",r"\bdut(y|ies)\b"],
+ "地緣政治／能源":[r"\biran\b",r"\bisrael\b",r"\bwar\b",r"\boil\b",r"\bstrait\b",r"\bmilitary\b"],
+ "AI／半導體":[r"\bartificial intelligence\b",r"\bai\b",r"\bchip(s)?\b",r"\bsemiconductor(s)?\b",r"\bnvidia\b"],
+ "美國政治／選舉制度":[r"\bsenate\b",r"\belection\b",r"\bvot(e|ing)\b",r"\bcongress\b",r"\bballot\b",r"\bsupreme court\b",r"\bnominee\b"],
+ "社群訊號／TMTG":[r"truth social",r"\btmtg\b",r"\bdjt\b"],
 }
 
-def heuristic_analyze(title: str, body: str) -> AIAnalysis:
+def heuristic_analyze(title:str,body:str)->AIAnalysis:
     text=(title+" "+body).lower()
-    category="其他／一般政治"
-    for cat, words in KEYWORDS.items():
-        if any(w in text for w in words): category=cat; break
-    neg=sum(w in text for w in ["war","attack","sanction","tariff","threat","risk"])
-    pos=sum(w in text for w in ["deal","peace","agreement","growth","support"])
+    if re.search(r"truth social|\btmtg\b|posting spree",text):
+        category="社群訊號／TMTG"; best=99
+    else:
+        category="其他／一般政治"; best=0
+    if best<99:
+        for cat,patterns in KEYWORDS.items():
+            score=sum(1 for p in patterns if re.search(p,text))
+            if score>best: category,best=cat,score
+    neg=sum(bool(re.search(p,text)) for p in [r"\bwar\b",r"\battack",r"\bsanction",r"\btariff",r"\bthreat",r"\brisk"])
+    pos=sum(bool(re.search(p,text)) for p in [r"\bdeal\b",r"\bpeace\b",r"\bagreement\b",r"\bgrowth\b",r"\bsupport\b",r"\bpause",r"\bceasefire\b"])
     sentiment="偏空" if neg>pos else "偏多" if pos>neg else "中性"
     summary=(body or title).strip().replace("\n"," ")[:420]
-    return AIAnalysis(category, summary, sentiment, .66, "RULE_EXTRACTIVE_V2", "EXTRACTIVE_SNIPPET")
+    return AIAnalysis(category,summary,sentiment,.66,"RULE_EXTRACTIVE_V2","EXTRACTIVE_SNIPPET")
 
-def analyze(title: str, body: str) -> AIAnalysis:
-    """Optional OpenAI-compatible endpoint; deterministic rule engine remains the safe fallback."""
+def analyze(title:str,body:str)->AIAnalysis:
     url=os.getenv("AI_API_URL","").strip(); key=os.getenv("AI_API_KEY","").strip(); model=os.getenv("AI_MODEL","").strip()
     if not (url and key and model): return heuristic_analyze(title,body)
     prompt={"title":title,"body":body[:5000],"task":"Return JSON: category, summary_zh, sentiment, confidence"}
     try:
         r=requests.post(url,headers={"Authorization":f"Bearer {key}","Content-Type":"application/json"},json={"model":model,"messages":[{"role":"user","content":json.dumps(prompt,ensure_ascii=False)}],"temperature":0},timeout=30)
-        r.raise_for_status(); payload=r.json()
-        content=payload["choices"][0]["message"]["content"]
-        data=json.loads(content)
-        return AIAnalysis(str(data["category"]),str(data["summary_zh"]),str(data["sentiment"]),float(data.get("confidence",.75)),f"LLM:{model}", "LLM_ABSTRACTIVE")
-    except Exception:
-        return heuristic_analyze(title,body)
+        r.raise_for_status(); data=json.loads(r.json()["choices"][0]["message"]["content"])
+        return AIAnalysis(str(data["category"]),str(data["summary_zh"]),str(data["sentiment"]),float(data.get("confidence",.75)),f"LLM:{model}","LLM_ABSTRACTIVE")
+    except Exception: return heuristic_analyze(title,body)

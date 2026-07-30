@@ -1,3 +1,11 @@
+# 2.2.1 - 2026-07-30
+
+- Restore V2.1 regex word-boundary classification so `airport` no longer triggers the `ai` keyword.
+- Restore Truth Social/TMTG priority over AI/semiconductor for posting-spree and AI-image stories.
+- Restore Truth Search Index as `UNCONFIRMED`, Tier 4, `SUPPLEMENT`, confidence 0.58.
+- Add back `clustering.py` and `test_v21_integration.py` so the release package is self-contained.
+- Preserve the V2.2 Truth Social Official Timeline collector and all previous sources.
+
 # 2.2.0 - 2026-07-30
 - Added `TruthTimelineCollector` as the highest-priority Truth Social Official source.
 - Uses configured official profile URL and the same-host public JSON timeline endpoints.
