@@ -1,0 +1,16 @@
+V2.3.5 modified files
+- src/trump_monitor/collectors/truth_social.py
+- src/trump_monitor/config.py
+- src/trump_monitor/source_health.py
+- app/streamlit_app.py
+- scripts/scheduled_run.py
+- config.yaml
+- config.example.yaml
+- packages.txt
+- .github/workflows/streamlit-smoke.yml
+- .github/workflows/scheduled-monitor.yml
+- tests/test_truth_four_layer.py
+- tests/test_source_health_dashboard.py
+- pyproject.toml
+- src/trump_monitor/engine.py
+- CHANGELOG.md

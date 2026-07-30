@@ -1,0 +1,6 @@
+V2.3.5 validation
+- pytest: 33 passed
+- compileall: PASS
+- smoke_test: PASS, events=4, status=SUCCESS, artifacts=7
+- ZIP integrity: PASS
+- Deployment verification required: Streamlit Cloud must install system Chromium from packages.txt.
