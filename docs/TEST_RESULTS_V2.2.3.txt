@@ -1,0 +1,27 @@
+V2.2.3 verification - 2026-07-30
+
+1. pytest -q
+   25 passed, 0 failed
+
+2. python -m compileall -q src app scripts tests
+   PASS
+
+3. Source/function audit
+   - TruthTimelineCollector exists and is assembled first in Web and scheduler.
+   - CNBC independent adapter exists and is assembled in Web and scheduler.
+   - V2.1 regressions (airport, Search Index, TMTG priority) pass.
+   - Existing Google News RSS / GNews / NewsAPI / reports / repository / WatchList retained.
+
+4. Actual uploaded report TRUMP-RUN-20260730-152520
+   - Streamlit deployment: application started successfully.
+   - CNBC: SUCCESS:3 and CNBC event visible.
+   - Google News RSS: SUCCESS:99.
+   - Truth Official Timeline: FAILED; fallback Search Index:22.
+   - Overall status: PARTIAL (correct because first-party Truth source failed).
+
+5. V2.2.3 corrections
+   - Dynamic sidebar no longer claims first-party Truth success unconditionally.
+   - Detailed source error is preserved in source_status and report source health.
+   - Default schema and GTC report title corrected to gtc.trump_event.v2.2.
+   - Streamlit deprecated use_container_width removed.
+   - Caches/output removed from release archive.

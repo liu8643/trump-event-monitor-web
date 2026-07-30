@@ -1,0 +1,23 @@
+V2.3.0 SOURCE HEALTH DASHBOARD VALIDATION
+Date: 2026-07-30
+
+pytest -q
+27 passed, 0 failed
+
+compileall
+PASS: src app scripts tests
+
+smoke_test
+SMOKE SAMPLE PASS
+Run ID: TRUMP-RUN-20260728-080000
+events=4
+status=SUCCESS
+artifacts=7
+
+Key regression checks
+- Homepage source list contains Truth Official, Truth Search, Reuters, AP, Bloomberg, CNBC, Google RSS, NewsAPI, GNews.
+- CNBC independent count is displayed.
+- Reuters/AP/Bloomberg counts are derived from deduplicated publisher evidence.
+- SUCCESS / NO_DATA / FAILED / NOT_CONFIGURED are separated.
+- Coverage bar is 100% only when usable data exists.
+- Original V2.1 classification, Truth Official, CNBC, exports and workflows remain covered.

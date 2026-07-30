@@ -1,0 +1,19 @@
+Modified:
+- app/streamlit_app.py
+- src/trump_monitor/engine.py
+- src/trump_monitor/config.py
+- src/trump_monitor/exporters/excel_exporter.py
+- tests/test_engine.py
+- pyproject.toml
+- CHANGELOG.md
+
+Added:
+- tests/test_v223_status.py
+- docs/TEST_RESULTS_V2.2.3.txt
+- docs/MODIFIED_FILES_V2.2.3.txt
+
+Cleaned from release:
+- output/
+- .pytest_cache/
+- all __pycache__/
+- all *.pyc

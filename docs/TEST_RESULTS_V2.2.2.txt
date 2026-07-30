@@ -1,0 +1,19 @@
+V2.2.2 CNBC Source Restoration Validation
+Date: 2026-07-30
+
+Root cause:
+- No dedicated CNBCAdapter/cnbc.py existed.
+- CNBC rows originally entered through GoogleNewsRssAdapter via RSS <source>CNBC</source>.
+- User CSV contained 16 CNBC rows, while the generated Excel had no CNBC text and source_status had no CNBC key.
+
+Changes:
+- Added CnbcNewsAdapter using Google News RSS source filtering.
+- Retained general GoogleNewsRssAdapter and all existing sources.
+- Added CNBC config, UI/source health, scheduled-run integration and report sheet 09_來源健康.
+- Added NO_DATA:0 status for zero-row sources.
+
+Validation:
+- python -m compileall src app scripts tests: PASS
+- pytest -q: 23 passed
+- smoke_test.py: PASS, events=4, artifacts=7
+- ZIP integrity: PASS
