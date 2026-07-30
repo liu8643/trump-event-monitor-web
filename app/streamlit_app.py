@@ -36,7 +36,7 @@ except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.3.4"
+APP_VERSION = "2.3.5"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -68,6 +68,7 @@ def build_adapters(mode: str):
             rendered_html_enabled=config.truth_rendered_html_enabled,
             static_html_enabled=config.truth_static_html_enabled,
             rendered_timeout=config.truth_rendered_timeout,
+            chromium_executable=config.truth_chromium_executable,
         ))
     truth_api_url = os.getenv("TRUTH_API_BASE_URL") or config.truth_api_base_url
     if truth_api_url and os.getenv("TRUTH_API_TOKEN"):
@@ -159,11 +160,12 @@ if page == "首頁總覽":
         st.subheader("來源健康儀表板")
         health_rows = build_source_health(result)
         health_summary = source_health_summary(health_rows)
-        h1, h2, h3, h4 = st.columns(4)
-        h1.metric("可用來源", f"{health_summary['success']} / {health_summary['total']}")
-        h2.metric("失敗來源", health_summary["failed"])
-        h3.metric("無資料來源", health_summary["no_data"])
-        h4.metric("未設定來源", health_summary["not_configured"])
+        h1, h2, h3, h4, h5 = st.columns(5)
+        h1.metric("成功來源", f"{health_summary['success']} / {health_summary['total']}")
+        h2.metric("部分來源", health_summary["partial"])
+        h3.metric("失敗來源", health_summary["failed"])
+        h4.metric("無資料來源", health_summary["no_data"])
+        h5.metric("未設定來源", health_summary["not_configured"])
         health_df = pd.DataFrame(health_rows)[["來源", "筆數", "狀態", "覆蓋率", "角色", "詳細狀態"]]
         st.dataframe(
             health_df,
