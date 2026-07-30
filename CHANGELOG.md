@@ -50,3 +50,9 @@
 - 保留一般 Google News RSS，交由既有去重流程排除重複。
 - UI、來源設定、排程與 Excel 新增 CNBC 狀態；新增 `09_來源健康`。
 - 來源零筆狀態改為 `NO_DATA:0`，與失敗 `FAILED:*` 分開。
+
+## 2.3.1 - 2026-07-30
+- Reconciled deployed GitHub source with the V2.3.0 formal release.
+- Fixed app/streamlit_app.py remaining at V2.2.2 and missing the homepage source-health dashboard.
+- Restored dynamic Truth Official status and Source Settings health table.
+- Removed generated caches/output and restored .gitignore/.env.example.
