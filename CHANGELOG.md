@@ -1,3 +1,9 @@
+## 2.3.5
+- 修正 Playwright 只有套件但缺 Chromium 執行檔：新增 packages.txt、系統 Chromium 偵測與 GitHub Workflow 安裝。
+- Static HTML 遇到 Cloudflare challenge 改為精簡紀錄，不再把整段 challenge script 寫入報表。
+- 補上第四層 MANUAL_REVIEW_AVAILABLE 明確紀錄。
+- 首頁來源健康摘要新增「部分來源」，避免將 Truth Official 的部分狀態混入成功來源。
+
 # V2.3.4
 - Truth Official 四層來源：JSON、Rendered HTML、Static HTML、人工查閱備註。
 - Static page shell會保存但不進Event Engine。

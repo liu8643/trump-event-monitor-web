@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
+import shutil
 from urllib.parse import quote_plus
 import html, json, os, re, xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
@@ -36,6 +37,7 @@ class TruthTimelineCollector(SourceAdapter):
         rendered_html_enabled: bool = True,
         static_html_enabled: bool = True,
         rendered_timeout: int = 25,
+        chromium_executable: str = "",
     ):
         from urllib.parse import urlsplit
 
@@ -54,6 +56,7 @@ class TruthTimelineCollector(SourceAdapter):
         self.rendered_html_enabled = bool(rendered_html_enabled)
         self.static_html_enabled = bool(static_html_enabled)
         self.rendered_timeout = max(5, int(rendered_timeout))
+        self.chromium_executable = str(chromium_executable or "").strip()
         self.last_status = "NOT_RUN"
         self.last_observations: list[SourceObservation] = []
         self.headers = {
@@ -212,7 +215,22 @@ class TruthTimelineCollector(SourceAdapter):
         rows: list[RawItem] = []
         try:
             with sync_playwright() as pw:
-                browser = pw.chromium.launch(headless=True)
+                executable = (
+                    self.chromium_executable
+                    or os.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE", "")
+                    or shutil.which("chromium")
+                    or shutil.which("chromium-browser")
+                    or shutil.which("google-chrome")
+                    or shutil.which("google-chrome-stable")
+                    or ""
+                )
+                launch_kwargs = {
+                    "headless": True,
+                    "args": ["--no-sandbox", "--disable-dev-shm-usage"],
+                }
+                if executable:
+                    launch_kwargs["executable_path"] = executable
+                browser = pw.chromium.launch(**launch_kwargs)
                 page = browser.new_page(user_agent=self.headers["User-Agent"])
                 page.goto(self.profile_url, wait_until="domcontentloaded", timeout=self.rendered_timeout * 1000)
                 page.wait_for_timeout(3500)
@@ -258,7 +276,9 @@ class TruthTimelineCollector(SourceAdapter):
                     status="STATIC_HTML_JS_REQUIRED" if "enable javascript" in body_text.lower() else "RENDERED_NO_POSTS"
                     self.last_observations.append(self._observation("RENDERED_HTML", status, body_text, "未辨識到可送入事件引擎的公開貼文；請點官方頁查閱。"))
         except Exception as exc:
-            self.last_observations.append(self._observation("RENDERED_HTML", "RENDERED_HTML_FAILED", note=f"{type(exc).__name__}: {exc}"))
+            message = f"{type(exc).__name__}: {exc}"
+            status = "RENDERER_BROWSER_MISSING" if "Executable doesn't exist" in message or "playwright install" in message.lower() else "RENDERED_HTML_FAILED"
+            self.last_observations.append(self._observation("RENDERED_HTML", status, note=message[:2000]))
         rows.sort(key=lambda item: item.published_at)
         return rows
 
@@ -268,22 +288,37 @@ class TruthTimelineCollector(SourceAdapter):
         try:
             r=self.session.get(self.profile_url, headers={"User-Agent": self.headers["User-Agent"], "Accept": "text/html"}, timeout=self.timeout)
             text=self._clean_content(getattr(r,"text",""))
+            low=text.lower()
+            is_cf = (
+                "just a moment" in low
+                or "cf_chl" in low
+                or "enable javascript and cookies to continue" in low
+                or "cloudflare" in low
+            )
             if r.status_code == 401:
                 status="LOGIN_REQUIRED"
+            elif r.status_code == 403 and is_cf:
+                status="ACCESS_DENIED_CLOUDFLARE_CHALLENGE"
             elif r.status_code == 403:
                 status="ACCESS_DENIED"
             elif r.status_code == 429:
                 status="RATE_LIMIT"
             elif r.status_code != 200:
                 status=f"STATIC_HTML_HTTP_{r.status_code}"
-            elif "enable javascript" in text.lower():
+            elif "enable javascript" in low:
                 status="STATIC_HTML_PAGE_SHELL"
             elif text:
                 status="STATIC_HTML_VISIBLE_TEXT"
             else:
                 status="STATIC_HTML_EMPTY"
+            if is_cf:
+                display = "Just a moment... Enable JavaScript and cookies to continue. (Cloudflare challenge page)"
+            elif status == "STATIC_HTML_PAGE_SHELL":
+                display = text[:500]
+            else:
+                display = text[:2000]
             note="公開頁可開啟，但未取得可送入事件引擎的貼文正文；請點擊官方頁面自行查閱。"
-            self.last_observations.append(self._observation("STATIC_HTML", status, text, note, False, "REFERENCE_ONLY"))
+            self.last_observations.append(self._observation("STATIC_HTML", status, display, note, False, "REFERENCE_ONLY"))
         except requests.RequestException as exc:
             self.last_observations.append(self._observation("STATIC_HTML", "STATIC_HTML_CONNECTION_FAILED", note=str(exc)))
 
@@ -307,6 +342,14 @@ class TruthTimelineCollector(SourceAdapter):
             self.last_status=f"SUCCESS_RENDERED_PARTIAL:{len(rendered)}"
             return rendered
         self._collect_static_html()
+        self.last_observations.append(self._observation(
+            "MANUAL_REVIEW",
+            "MANUAL_REVIEW_AVAILABLE",
+            displayed_text="Truth Official 公開頁可由使用者自行開啟查閱。",
+            note="自動來源未取得可送入事件引擎的完整貼文；請使用官方網址人工確認。",
+            eligible=False,
+            quality="MANUAL_REFERENCE",
+        ))
         statuses=[o.status for o in self.last_observations]
         if "STATIC_HTML_PAGE_SHELL" in statuses:
             self.last_status="STATIC_HTML_PAGE_SHELL"

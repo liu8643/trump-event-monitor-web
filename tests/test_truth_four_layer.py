@@ -29,3 +29,22 @@ def test_json_success_is_primary_event():
     assert len(rows)==1
     assert rows[0].source_tier==1
     assert c.last_status.startswith("SUCCESS_FULL_TEXT")
+
+
+class CloudflareSession:
+    def get(self,url,**kwargs):
+        if "/api/v1/" in url: return Resp(403)
+        return Resp(403, "<html><title>Just a moment...</title><body>Enable JavaScript and cookies to continue<script>window._cf_chl_opt={very:'long'}</script></body></html>")
+
+def test_cloudflare_static_html_is_sanitized_and_manual_review_added():
+    c=TruthTimelineCollector(session=CloudflareSession(), rendered_html_enabled=False)
+    now=datetime.now(timezone.utc)
+    rows=c.collect(now-timedelta(hours=72),now)
+    assert rows==[]
+    static=next(o for o in c.last_observations if o.layer=="STATIC_HTML")
+    assert static.status=="ACCESS_DENIED_CLOUDFLARE_CHALLENGE"
+    assert "Cloudflare challenge page" in static.displayed_text
+    assert "_cf_chl_opt" not in static.displayed_text
+    manual=next(o for o in c.last_observations if o.layer=="MANUAL_REVIEW")
+    assert manual.status=="MANUAL_REVIEW_AVAILABLE"
+    assert not manual.eligible_for_event_engine

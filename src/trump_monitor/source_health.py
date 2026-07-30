@@ -96,5 +96,6 @@ def source_health_summary(rows: list[dict[str, Any]]) -> dict[str, int]:
         "success": sum(row["state"] == "SUCCESS" for row in rows),
         "no_data": sum(row["state"] == "NO_DATA" for row in rows),
         "failed": sum(row["state"] == "FAILED" for row in rows),
+        "partial": sum(row["state"] == "PARTIAL" for row in rows),
         "not_configured": sum(row["state"] == "NOT_CONFIGURED" for row in rows),
     }

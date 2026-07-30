@@ -78,3 +78,11 @@ def test_source_health_distinguishes_failed_no_data_and_not_configured():
     assert summary["success"] == 6
     assert summary["failed"] == 1
     assert summary["not_configured"] == 2
+
+
+def test_source_health_summary_counts_partial():
+    from trump_monitor.source_health import source_health_summary
+    rows=[{"state":"SUCCESS"},{"state":"PARTIAL"},{"state":"FAILED"},{"state":"NO_DATA"},{"state":"NOT_CONFIGURED"}]
+    summary=source_health_summary(rows)
+    assert summary["partial"]==1
+    assert summary["success"]==1

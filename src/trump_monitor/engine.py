@@ -78,6 +78,6 @@ class TrumpEventEngine:
             truth_status="NO_POSTS_IN_WINDOW"
         return RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.4",prompt_version="TRUMP_PROMPT_V2.3.4",model_version="TRUTH_FOUR_LAYER_V2.3.4",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.3.5",prompt_version="TRUMP_PROMPT_V2.3.5",model_version="TRUTH_FOUR_LAYER_V2.3.5",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])

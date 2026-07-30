@@ -15,6 +15,7 @@ sources:
     official_timeline_max_pages: 8
     rendered_html_enabled: true
     rendered_timeout_seconds: 25
+    chromium_executable: ""
     static_html_enabled: true
     api_base_url: "" # Licensed Truth API endpoint when contracted
     manual_import_path: "data/truth_manual_posts.json"

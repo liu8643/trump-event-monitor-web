@@ -28,6 +28,7 @@ class AppConfig:
     truth_rendered_html_enabled: bool = True
     truth_static_html_enabled: bool = True
     truth_rendered_timeout: int = 25
+    truth_chromium_executable: str = ""
     cnbc_enabled: bool = True
     cnbc_timeout: int = 20
 
@@ -60,6 +61,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         truth_rendered_html_enabled=bool(truth.get("rendered_html_enabled", True)),
         truth_static_html_enabled=bool(truth.get("static_html_enabled", True)),
         truth_rendered_timeout=int(truth.get("rendered_timeout_seconds", 25)),
+        truth_chromium_executable=str(truth.get("chromium_executable", "")),
         cnbc_enabled=bool(cnbc.get("enabled", True)),
         cnbc_timeout=int(cnbc.get("timeout_seconds", 20)),
     )
