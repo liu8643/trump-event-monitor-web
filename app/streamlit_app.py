@@ -27,6 +27,7 @@ from trump_monitor.exporters.json_exporter import export_json
 from trump_monitor.exporters.html_exporter import export_html
 from trump_monitor.repository import EventRepository
 from trump_monitor.watchlist import update_watchlist
+from trump_monitor.source_health import build_source_health, source_health_summary
 from trump_monitor.exporters.docx_exporter import export_docx
 from trump_monitor.exporters.pdf_exporter import export_pdf
 try:
@@ -35,7 +36,7 @@ except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.2.2"
+APP_VERSION = "2.3.1"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -106,7 +107,7 @@ def get_result():
 
 with st.sidebar:
     st.title("📡 Trump News Center")
-    st.caption(f"正式版本 v{APP_VERSION}｜新增 Truth Social Official Timeline；原有來源與功能保留")
+    st.caption(f"正式版本 v{APP_VERSION}｜修復首頁來源健康儀表板部署落差；原有來源與功能保留")
     page = st.radio("功能", [
         "首頁總覽","事件中心","事件分析","新聞明細","Truth貼文","市場影響","台股候選","GTC預覽","報表中心","歷史執行","來源設定","系統Log"
     ])
@@ -114,10 +115,16 @@ with st.sidebar:
     if mode == "SAMPLE":
         st.warning("SAMPLE 是測試資料，不可作投資分析。")
     else:
-        st.success("ONLINE：Truth Social 為第一手來源；Reuters/AP/Bloomberg/CNBC 交叉驗證；Google RSS、NewsAPI、GNews補充。")
+        current_result = get_result()
+        if current_result is None:
+            st.info("ONLINE 已設定：優先嘗試 Truth Social Official Timeline；Reuters/AP/Bloomberg/CNBC 與聚合新聞作交叉驗證。實際是否取得第一手貼文，需以本次來源狀態為準。")
+        elif current_result.source_counts.get("truth_official_timeline", 0) > 0:
+            st.success(f"ONLINE：Truth Social Official Timeline 第一手貼文 {current_result.source_counts.get('truth_official_timeline',0)} 筆；CNBC {current_result.source_counts.get('cnbc',0)} 筆；其他媒體交叉驗證。")
+        else:
+            st.warning(f"ONLINE：本次未取得 Truth Social Official Timeline 第一手貼文；目前使用搜尋索引/媒體來源降級分析。Truth狀態：{current_result.truth_social_status}")
     auto5=st.checkbox("每5分鐘自動更新（頁面開啟時）",value=False)
     if auto5 and st_autorefresh: st_autorefresh(interval=300000,key="v2_auto_refresh")
-    if st.button("開始／重新分析", type="primary", use_container_width=True) or (auto5 and "result" in st.session_state):
+    if st.button("開始／重新分析", type="primary", width="stretch") or (auto5 and "result" in st.session_state):
         run_analysis(mode)
     result = get_result()
     if result:
@@ -144,12 +151,38 @@ if page == "首頁總覽":
         c4.metric("來源狀態", result.status)
         if result.status in {"DATA_UNAVAILABLE", "SOURCE_FAILED"}:
             st.warning("沒有可用正式新聞，請查看來源設定與系統 Log。")
+
+        st.subheader("來源健康儀表板")
+        health_rows = build_source_health(result)
+        health_summary = source_health_summary(health_rows)
+        h1, h2, h3, h4 = st.columns(4)
+        h1.metric("可用來源", f"{health_summary['success']} / {health_summary['total']}")
+        h2.metric("失敗來源", health_summary["failed"])
+        h3.metric("無資料來源", health_summary["no_data"])
+        h4.metric("未設定來源", health_summary["not_configured"])
+        health_df = pd.DataFrame(health_rows)[["來源", "筆數", "狀態", "覆蓋率", "角色", "詳細狀態"]]
+        st.dataframe(
+            health_df,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "筆數": st.column_config.NumberColumn(format="%d"),
+                "覆蓋率": st.column_config.ProgressColumn(
+                    "來源覆蓋率", min_value=0, max_value=100, format="%d%%"
+                ),
+            },
+        )
+        if health_summary["failed"]:
+            st.warning("部分來源失敗；請查看『詳細狀態』、來源設定或系統 Log。其他成功來源仍會繼續分析。")
+        elif health_summary["no_data"]:
+            st.info("部分來源在最近72小時沒有資料；這不等同於連線失敗。")
+
         rows=[]
         for e in result.events:
             rows.append({"星等":"★"*e.score.importance,"主題":e.topic,"類別":e.category,"可信度":e.score.confidence,"GTC":e.battle_action,"最新時間":e.last_seen})
         if rows:
             df=pd.DataFrame(rows)
-            st.dataframe(df, use_container_width=True, hide_index=True, column_config={"可信度":st.column_config.ProgressColumn(min_value=0,max_value=1,format="%.0f%%")})
+            st.dataframe(df, width="stretch", hide_index=True, column_config={"可信度":st.column_config.ProgressColumn(min_value=0,max_value=1,format="%.0f%%")})
             impact_rows=[]
             for e in result.events:
                 for i in e.impacts: impact_rows.append({"事件":e.event_id,"資產":i.asset,"分數":i.final_score})
@@ -184,7 +217,7 @@ elif page == "事件分析":
         for e in result.events:
             with st.expander(f"{'★'*e.score.importance} {e.topic}"):
                 st.json(e.score.model_dump())
-                st.dataframe(pd.DataFrame([i.model_dump() for i in e.impacts]),use_container_width=True,hide_index=True)
+                st.dataframe(pd.DataFrame([i.model_dump() for i in e.impacts]),width="stretch",hide_index=True)
                 st.info("人工覆核功能於正式資料庫版本可寫入 manual_reviews；本 MVP 保留介面規格，不修改附件中的既有 GTC 作戰等級。")
 
 elif page == "新聞明細":
@@ -196,7 +229,7 @@ elif page == "新聞明細":
         for e in result.events:
             for s in e.sources:
                 rows.append({"發布時間":s.published_at,"事件ID":e.event_id,"標題":s.title,"摘要":s.ai_summary_zh,"摘要方式":s.ai_summary_status,"分析器":s.ai_provider,"AI情緒":s.ai_sentiment,"內容狀態":s.content_status,"來源":s.source_name,"Publisher Group":s.publisher_group,"來源角色":s.source_type,"直接引用":s.direct_quote,"URL":s.url})
-        st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True,column_config={"URL":st.column_config.LinkColumn()})
+        st.dataframe(pd.DataFrame(rows),width="stretch",hide_index=True,column_config={"URL":st.column_config.LinkColumn()})
 
 elif page == "Truth貼文":
     st.header("Truth Social 第一手貼文")
@@ -229,7 +262,7 @@ elif page == "市場影響":
     if not result: st.info("尚無分析結果。")
     else:
         rows=[{"事件ID":e.event_id,"資產":i.asset,"Rule":i.rule_score,"AI":i.ai_score,"綜合分數":i.final_score,"信心度":i.confidence,"方向":i.direction,"理由":i.rationale,"期間":i.horizon} for e in result.events for i in e.impacts]
-        st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
+        st.dataframe(pd.DataFrame(rows),width="stretch",hide_index=True)
 
 elif page == "台股候選":
     st.header("台股候選（風險 Gate）")
@@ -237,7 +270,7 @@ elif page == "台股候選":
     if not result: st.info("尚無分析結果。")
     else:
         rows=result.taiwan_candidates
-        st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
+        st.dataframe(pd.DataFrame(rows),width="stretch",hide_index=True)
         st.warning("V2以事件/產業映射產生候選與內部WatchList；未接即時價格、流動性與持倉前，一律WATCH，不直接BUY_READY。")
 
 elif page == "GTC預覽":
@@ -267,16 +300,16 @@ elif page == "報表中心":
         docx=export_docx(result,OUTPUT/f"trump_report_{result.run_id}.docx")
         pdf=export_pdf(result,OUTPUT/f"trump_report_{result.run_id}.pdf")
         c1,c2,c3=st.columns(3)
-        c1.download_button("下載 Excel",xlsx.read_bytes(),xlsx.name,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",use_container_width=True)
-        c2.download_button("下載 Word",docx.read_bytes(),docx.name,"application/vnd.openxmlformats-officedocument.wordprocessingml.document",use_container_width=True)
-        c3.download_button("下載 PDF",pdf.read_bytes(),pdf.name,"application/pdf",use_container_width=True)
+        c1.download_button("下載 Excel",xlsx.read_bytes(),xlsx.name,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",width="stretch")
+        c2.download_button("下載 Word",docx.read_bytes(),docx.name,"application/vnd.openxmlformats-officedocument.wordprocessingml.document",width="stretch")
+        c3.download_button("下載 PDF",pdf.read_bytes(),pdf.name,"application/pdf",width="stretch")
         c4,c5,c6=st.columns(3)
-        c4.download_button("下載 JSON",js.read_bytes(),js.name,"application/json",use_container_width=True)
-        c5.download_button("下載 HTML",html.read_bytes(),html.name,"text/html",use_container_width=True)
+        c4.download_button("下載 JSON",js.read_bytes(),js.name,"application/json",width="stretch")
+        c5.download_button("下載 HTML",html.read_bytes(),html.name,"text/html",width="stretch")
         watch_paths=[Path(x) for x in result.watchlist_paths if Path(x).exists()]
         if len(watch_paths)>=2:
-            c6.download_button("下載 GTC WatchList JSON",watch_paths[0].read_bytes(),watch_paths[0].name,"application/json",use_container_width=True)
-            st.download_button("下載 GTC WatchList CSV",watch_paths[1].read_bytes(),watch_paths[1].name,"text/csv",use_container_width=True)
+            c6.download_button("下載 GTC WatchList JSON",watch_paths[0].read_bytes(),watch_paths[0].name,"application/json",width="stretch")
+            st.download_button("下載 GTC WatchList CSV",watch_paths[1].read_bytes(),watch_paths[1].name,"text/csv",width="stretch")
         st.caption("GTC WatchList 為 REVIEW_REQUIRED；不會未經確認直接改寫既有 GTC 資料庫。")
 
 elif page == "歷史執行":
@@ -286,15 +319,15 @@ elif page == "歷史執行":
     else:
         q=st.text_input("搜尋 Run ID／日期／狀態")
         filtered=[r for r in runs if not q or q.lower() in " ".join(str(v) for v in r.values()).lower()]
-        st.dataframe(pd.DataFrame(filtered),use_container_width=True,hide_index=True)
+        st.dataframe(pd.DataFrame(filtered),width="stretch",hide_index=True)
         ids=[r["run_id"] for r in filtered]
         if ids:
             selected=st.selectbox("選擇批次查看明細",ids)
             tabs=st.tabs(["事件","來源","市場影響","WatchList","完整JSON"])
-            with tabs[0]: st.dataframe(pd.DataFrame(repository().list_events(selected)),use_container_width=True,hide_index=True)
-            with tabs[1]: st.dataframe(pd.DataFrame(repository().list_sources(selected)),use_container_width=True,hide_index=True)
-            with tabs[2]: st.dataframe(pd.DataFrame(repository().list_impacts(selected)),use_container_width=True,hide_index=True)
-            with tabs[3]: st.dataframe(pd.DataFrame(repository().list_watchlist(selected)),use_container_width=True,hide_index=True)
+            with tabs[0]: st.dataframe(pd.DataFrame(repository().list_events(selected)),width="stretch",hide_index=True)
+            with tabs[1]: st.dataframe(pd.DataFrame(repository().list_sources(selected)),width="stretch",hide_index=True)
+            with tabs[2]: st.dataframe(pd.DataFrame(repository().list_impacts(selected)),width="stretch",hide_index=True)
+            with tabs[3]: st.dataframe(pd.DataFrame(repository().list_watchlist(selected)),width="stretch",hide_index=True)
             with tabs[4]:
                 old_run=repository().load_run(selected)
                 st.json(old_run.model_dump(mode="json") if old_run else {})
@@ -306,9 +339,17 @@ elif page == "來源設定":
     st.markdown(f"1. **Truth Social Official Timeline**：[{config.truth_account}]({config.truth_profile_url}) 公開時間軸 → 時間排序 → 72小時篩選\n2. **原有Truth來源保留**：授權API → 人工匯入 → 搜尋索引發現\n3. **Reuters／AP／Bloomberg**：交叉驗證\n4. **Google News RSS**：補充\n5. **NewsAPI／GNews**：補充")
     st.write({"Truth Social Official URL":config.truth_profile_url,"Truth Official Timeline啟用":config.truth_official_timeline_enabled,"Truth API Token":bool(os.getenv("TRUTH_API_TOKEN")),"Truth API Endpoint":bool(os.getenv("TRUTH_API_BASE_URL") or config.truth_api_base_url),"Truth人工匯入":str(ROOT/config.truth_manual_import_path),"CNBC來源啟用":config.cnbc_enabled,"Google News RSS":True,"GNews Key":bool(os.getenv("GNEWS_API_KEY")),"NewsAPI Key":bool(os.getenv("NEWSAPI_API_KEY"))})
     if result := get_result():
-        st.write("來源狀態", result.source_status)
-        st.write("來源筆數", result.source_counts)
-        st.write("Truth Social 狀態", result.truth_social_status)
+        health_rows = build_source_health(result)
+        st.dataframe(
+            pd.DataFrame(health_rows)[["來源", "筆數", "狀態", "覆蓋率", "角色", "詳細狀態"]],
+            width="stretch",
+            hide_index=True,
+            column_config={"覆蓋率": st.column_config.ProgressColumn("來源覆蓋率", min_value=0, max_value=100, format="%d%%")},
+        )
+        with st.expander("原始來源狀態（工程用）"):
+            st.write("來源狀態", result.source_status)
+            st.write("來源筆數", result.source_counts)
+            st.write("Truth Social 狀態", result.truth_social_status)
     st.info("正式來源失敗時會明確顯示FAILED／RATE_LIMIT／LOGIN_REQUIRED等原因，不會以Sample替代。")
 
 elif page == "系統Log":
