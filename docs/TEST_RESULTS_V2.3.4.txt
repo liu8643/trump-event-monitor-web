@@ -1,0 +1,8 @@
+V2.3.4 validation
+- pytest: 31 passed
+- compileall: PASS
+- smoke_test: PASS (events=4, status=SUCCESS, artifacts=7)
+- ZIP integrity: PASS
+- Static HTML page shell is recorded but excluded from Event Engine
+- JSON full text is Tier1/PRIMARY and eligible for Event Engine
+- Rendered HTML is optional; missing browser is reported as RENDERER_NOT_AVAILABLE

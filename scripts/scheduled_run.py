@@ -16,7 +16,7 @@ from trump_monitor.watchlist import update_watchlist
 from trump_monitor.repository import EventRepository
 cfg=load_config(ROOT/'config.yaml'); adapters=[]
 if cfg.truth_official_timeline_enabled:
-    adapters.append(TruthTimelineCollector(cfg.truth_profile_url,cfg.truth_account,timeout=cfg.truth_official_timeline_timeout,max_pages=cfg.truth_official_timeline_max_pages))
+    adapters.append(TruthTimelineCollector(cfg.truth_profile_url,cfg.truth_account,account_id=cfg.truth_official_account_id,timeout=cfg.truth_official_timeline_timeout,max_pages=cfg.truth_official_timeline_max_pages,rendered_html_enabled=cfg.truth_rendered_html_enabled,static_html_enabled=cfg.truth_static_html_enabled,rendered_timeout=cfg.truth_rendered_timeout))
 adapters.extend([TruthManualImportAdapter(ROOT/cfg.truth_manual_import_path,cfg.truth_account),TruthSearchIndexAdapter(cfg.truth_account)])
 if cfg.cnbc_enabled: adapters.append(CnbcNewsAdapter(timeout=cfg.cnbc_timeout))
 adapters.append(GoogleNewsRssAdapter())
