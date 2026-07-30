@@ -174,6 +174,18 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
         ws9.append([key,status,count,labels.get(key,key),independent,note])
     _body(ws9,4,3+len(all_keys),6); _widths(ws9,{1:28,2:24,3:12,4:44,5:18,6:65}); ws9.freeze_panes="A4"
 
+    if result.source_observations:
+        start_row=6+len(all_keys)
+        ws9.cell(start_row,1,"Truth Official 四層取得與人工查閱紀錄")
+        ws9.cell(start_row,1).font=Font(bold=True,size=13,color="1F4E78")
+        headers=["層級","狀態","顯示/回傳內容","備註","可進事件引擎","證據品質","官方網址","觀察時間"]
+        for col,val in enumerate(headers,1): ws9.cell(start_row+1,col,val)
+        _header(ws9,start_row+1,headers)
+        for obs in result.source_observations:
+            ws9.append([obs.layer,obs.status,obs.displayed_text,obs.note,"是" if obs.eligible_for_event_engine else "否",obs.evidence_quality,obs.url,obs.observed_at.isoformat()])
+        _body(ws9,start_row+2,start_row+1+len(result.source_observations),8)
+        _widths(ws9,{1:26,2:34,3:58,4:62,5:18,6:22,7:65,8:28})
+
     tmp = out.with_suffix(out.suffix + ".tmp")
     wb.save(tmp)
     tmp.replace(out)

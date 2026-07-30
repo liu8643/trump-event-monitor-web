@@ -31,6 +31,18 @@ class RawItem(BaseModel):
     ai_summary_status: str = "EXTRACTIVE_SNIPPET"
 
 
+class SourceObservation(BaseModel):
+    source_key: str
+    layer: str
+    status: str
+    url: str
+    displayed_text: str = ""
+    note: str = ""
+    observed_at: datetime
+    eligible_for_event_engine: bool = False
+    evidence_quality: str = "NONE"
+
+
 class EventScore(BaseModel):
     rule_score: float
     ai_score: float
@@ -87,6 +99,7 @@ class RunResult(BaseModel):
     schema_version: str
     source_status: dict[str, str]
     source_counts: dict[str, int] = Field(default_factory=dict)
+    source_observations: list[SourceObservation] = Field(default_factory=list)
     source_priority: list[str] = Field(default_factory=list)
     data_mode: Literal["ONLINE", "SAMPLE"] = "ONLINE"
     truth_social_status: str = "NOT_CONFIGURED"

@@ -31,7 +31,7 @@ def test_truth_official_timeline_filters_sorts_and_marks_primary():
     session = FakeSession()
     collector = TruthTimelineCollector(
         "https://truthsocial.com/@realDonaldTrump?gsid=test",
-        "realDonaldTrump", session=session, page_size=40, max_pages=2,
+        "realDonaldTrump", account_id="", session=session, page_size=40, max_pages=2,
     )
     rows = collector.collect(
         datetime(2026, 7, 28, tzinfo=timezone.utc),
@@ -49,3 +49,40 @@ def test_truth_official_timeline_profile_handle_fallback():
     collector = TruthTimelineCollector("https://truthsocial.com/@realDonaldTrump?gsid=x", account="")
     assert collector.account == "realDonaldTrump"
     assert collector.base_url == "https://truthsocial.com"
+
+
+class DirectIdSession:
+    def __init__(self): self.calls=[]
+    def get(self, url, params=None, headers=None, timeout=None):
+        self.calls.append((url, params))
+        assert "/accounts/lookup" not in url
+        return FakeResponse([
+            {"id":"direct","created_at":"2026-07-30T03:00:00Z","content":"<p>Direct ID post</p>","url":"https://truthsocial.com/@realDonaldTrump/direct"}
+        ])
+
+
+def test_truth_official_timeline_uses_configured_account_id_without_lookup():
+    session=DirectIdSession()
+    collector=TruthTimelineCollector(
+        "https://truthsocial.com/@realDonaldTrump?gsid=x",
+        "realDonaldTrump", account_id="107780257626128497", session=session,
+    )
+    rows=collector.collect(
+        datetime(2026,7,29,tzinfo=timezone.utc),
+        datetime(2026,7,30,4,tzinfo=timezone.utc),
+    )
+    assert len(rows)==1
+    assert session.calls[0][0].endswith("/api/v1/accounts/107780257626128497/statuses")
+
+
+def test_truth_official_timeline_failure_identifies_status_endpoint():
+    class ForbiddenSession:
+        def get(self, url, params=None, headers=None, timeout=None):
+            response=FakeResponse({}, status_code=403)
+            response.headers={"server":"cloudflare","cf-ray":"abc"}
+            return response
+    collector=TruthTimelineCollector(account_id="107780257626128497", session=ForbiddenSession(), rendered_html_enabled=False)
+    rows=collector.collect(datetime(2026,7,29,tzinfo=timezone.utc), datetime(2026,7,30,tzinfo=timezone.utc))
+    assert rows == []
+    assert any("ACCOUNT_STATUSES_ACCESS_DENIED/HTTP_403" in obs.status for obs in collector.last_observations)
+    assert collector.last_status == "ACCESS_DENIED"

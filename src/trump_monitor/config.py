@@ -19,11 +19,15 @@ class AppConfig:
     buy_ready_abs_score: int = 3
     truth_account: str = "realDonaldTrump"
     truth_profile_url: str = "https://truthsocial.com/@realDonaldTrump"
+    truth_official_account_id: str = "107780257626128497"
     truth_api_base_url: str = ""
     truth_manual_import_path: str = "data/truth_manual_posts.json"
     truth_official_timeline_enabled: bool = True
     truth_official_timeline_timeout: int = 20
     truth_official_timeline_max_pages: int = 8
+    truth_rendered_html_enabled: bool = True
+    truth_static_html_enabled: bool = True
+    truth_rendered_timeout: int = 25
     cnbc_enabled: bool = True
     cnbc_timeout: int = 20
 
@@ -48,10 +52,14 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         rule_weight=float(scoring.get("rule_weight", .7)), ai_weight=float(scoring.get("ai_weight", .3)),
         buy_ready_confidence=float(scoring.get("buy_ready_confidence", .8)), buy_ready_abs_score=int(scoring.get("buy_ready_abs_score", 3)),
         truth_account=str(truth.get("account", "realDonaldTrump")), truth_profile_url=str(truth.get("profile_url", "https://truthsocial.com/@realDonaldTrump")),
+        truth_official_account_id=str(truth.get("official_account_id", "107780257626128497")),
         truth_api_base_url=str(truth.get("api_base_url", "")), truth_manual_import_path=str(truth.get("manual_import_path", "data/truth_manual_posts.json")),
         truth_official_timeline_enabled=bool(truth.get("official_timeline_enabled", True)),
         truth_official_timeline_timeout=int(truth.get("official_timeline_timeout_seconds", 20)),
         truth_official_timeline_max_pages=int(truth.get("official_timeline_max_pages", 8)),
+        truth_rendered_html_enabled=bool(truth.get("rendered_html_enabled", True)),
+        truth_static_html_enabled=bool(truth.get("static_html_enabled", True)),
+        truth_rendered_timeout=int(truth.get("rendered_timeout_seconds", 25)),
         cnbc_enabled=bool(cnbc.get("enabled", True)),
         cnbc_timeout=int(cnbc.get("timeout_seconds", 20)),
     )

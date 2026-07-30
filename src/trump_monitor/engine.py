@@ -22,10 +22,14 @@ class TrumpEventEngine:
         started=now or datetime.now(timezone.utc)
         if started.tzinfo is None: started=started.replace(tzinfo=timezone.utc)
         start=started-timedelta(hours=self.config.lookback_hours)
-        raw=[]; source_status={}; source_counts={}; warnings=[]
+        raw=[]; source_status={}; source_counts={}; source_observations=[]; warnings=[]
         for adapter in self.adapters:
             try:
-                rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows); source_status[adapter.name]=(f"SUCCESS:{len(rows)}" if rows else "NO_DATA:0")
+                rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows)
+                adapter_state=getattr(adapter,"last_status","")
+                source_status[adapter.name]=adapter_state or (f"SUCCESS:{len(rows)}" if rows else "NO_DATA:0")
+                source_observations.extend(getattr(adapter,"last_observations",[]) or [])
+                if adapter_state and not adapter_state.startswith("SUCCESS") and adapter_state not in {"NO_POSTS_IN_72H","NO_DATA:0"}: warnings.append(f"{adapter.name}: {adapter_state}")
             except Exception as exc:
                 source_counts[adapter.name]=0
                 detail=" ".join(str(exc).split())[:180] or type(exc).__name__
@@ -74,6 +78,6 @@ class TrumpEventEngine:
             truth_status="NO_POSTS_IN_WINDOW"
         return RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.0",prompt_version="TRUMP_PROMPT_V2.3.0",model_version="TRUTH_OFFICIAL_TIMELINE_CNBC_SOURCE_HEALTH_V2.3.0",schema_version=self.config.schema_version,
-            source_status=source_status,source_counts=source_counts,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
+            rule_version="TRUMP_RULE_V2.3.4",prompt_version="TRUMP_PROMPT_V2.3.4",model_version="TRUTH_FOUR_LAYER_V2.3.4",schema_version=self.config.schema_version,
+            source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])

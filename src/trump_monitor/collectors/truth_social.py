@@ -9,7 +9,7 @@ from email.utils import parsedate_to_datetime
 import requests
 
 from trump_monitor.collectors.base import SourceAdapter, SourceError
-from trump_monitor.models import RawItem
+from trump_monitor.models import RawItem, SourceObservation
 
 
 class TruthTimelineCollector(SourceAdapter):
@@ -28,10 +28,14 @@ class TruthTimelineCollector(SourceAdapter):
         self,
         profile_url: str = "https://truthsocial.com/@realDonaldTrump",
         account: str = "realDonaldTrump",
+        account_id: str = "107780257626128497",
         timeout: int = 20,
         max_pages: int = 8,
         page_size: int = 40,
         session: requests.Session | None = None,
+        rendered_html_enabled: bool = True,
+        static_html_enabled: bool = True,
+        rendered_timeout: int = 25,
     ):
         from urllib.parse import urlsplit
 
@@ -42,33 +46,48 @@ class TruthTimelineCollector(SourceAdapter):
         self.base_url = f"{parts.scheme}://{parts.netloc}"
         profile_handle = parts.path.strip("/").split("/")[0].lstrip("@") if parts.path else ""
         self.account = account or profile_handle or "realDonaldTrump"
+        self.account_id = str(account_id or "").strip()
         self.timeout = timeout
         self.max_pages = max(1, int(max_pages))
         self.page_size = min(40, max(1, int(page_size)))
         self.session = session or requests.Session()
+        self.rendered_html_enabled = bool(rendered_html_enabled)
+        self.static_html_enabled = bool(static_html_enabled)
+        self.rendered_timeout = max(5, int(rendered_timeout))
+        self.last_status = "NOT_RUN"
+        self.last_observations: list[SourceObservation] = []
         self.headers = {
             "Accept": "application/json",
             "User-Agent": "TrumpEventMonitor/2.2 (+TruthOfficialTimeline)",
             "Referer": self.profile_url,
         }
 
-    def _get_json(self, url: str, params: dict | None = None):
+    def _get_json(self, url: str, params: dict | None = None, endpoint_name: str = "endpoint"):
+        """GET a public JSON endpoint and preserve actionable failure details.
+
+        Truth Social may treat the account lookup endpoint differently from the
+        account-status endpoint.  The endpoint name is therefore included in the
+        error so the UI can distinguish LOOKUP_DENIED from STATUSES_DENIED.
+        """
         try:
             response = self.session.get(url, params=params, headers=self.headers, timeout=self.timeout)
         except requests.RequestException as exc:
-            raise SourceError(f"Truth Official Timeline 連線失敗: {exc}") from exc
+            raise SourceError(f"{endpoint_name}_CONNECTION_FAILED: {exc}") from exc
         if response.status_code == 401:
-            raise SourceError("LOGIN_REQUIRED/UNAUTHORIZED")
+            raise SourceError(f"{endpoint_name}_LOGIN_REQUIRED/HTTP_401")
         if response.status_code == 403:
-            raise SourceError("ACCESS_DENIED/HTTP_403")
+            server = response.headers.get("server", "") if hasattr(response, "headers") else ""
+            ray = response.headers.get("cf-ray", "") if hasattr(response, "headers") else ""
+            suffix = ":".join(x for x in (server, ray) if x)
+            raise SourceError(f"{endpoint_name}_ACCESS_DENIED/HTTP_403" + (f":{suffix}" if suffix else ""))
         if response.status_code == 429:
-            raise SourceError("RATE_LIMIT/HTTP_429")
+            raise SourceError(f"{endpoint_name}_RATE_LIMIT/HTTP_429")
         if response.status_code != 200:
-            raise SourceError(f"Truth Official Timeline HTTP {response.status_code}")
+            raise SourceError(f"{endpoint_name}_HTTP_{response.status_code}")
         try:
             return response.json()
         except Exception as exc:
-            raise SourceError("Truth Official Timeline 回傳非JSON；公開時間軸端點可能已變更") from exc
+            raise SourceError(f"{endpoint_name}_NON_JSON_RESPONSE") from exc
 
     @staticmethod
     def _clean_content(value: object) -> str:
@@ -78,19 +97,25 @@ class TruthTimelineCollector(SourceAdapter):
         text = html.unescape(text)
         return re.sub(r"[ \t]+", " ", re.sub(r"\n{3,}", "\n\n", text)).strip()
 
-    def collect(self, start: datetime, end: datetime) -> list[RawItem]:
+    def _collect_json(self, start: datetime, end: datetime) -> list[RawItem]:
         start = start.astimezone(timezone.utc)
         end = end.astimezone(timezone.utc)
-        account_data = self._get_json(
-            f"{self.base_url}/api/v1/accounts/lookup",
-            {"acct": self.account},
-        )
-        account_id = str(account_data.get("id") or "").strip() if isinstance(account_data, dict) else ""
-        account_acct = str(account_data.get("acct") or account_data.get("username") or "") if isinstance(account_data, dict) else ""
+        # Prefer the configured stable account ID.  The public lookup endpoint is
+        # currently more likely to be blocked by the platform/WAF than the statuses
+        # endpoint.  Falling back to lookup remains available for other accounts.
+        account_id = self.account_id
         if not account_id:
-            raise SourceError("Truth Official Timeline 找不到帳號ID")
-        if account_acct and account_acct.split("@")[0].lower() != self.account.lower():
-            raise SourceError(f"Truth Official Timeline 帳號驗證不符: {account_acct}")
+            account_data = self._get_json(
+                f"{self.base_url}/api/v1/accounts/lookup",
+                {"acct": self.account},
+                endpoint_name="ACCOUNT_LOOKUP",
+            )
+            account_id = str(account_data.get("id") or "").strip() if isinstance(account_data, dict) else ""
+            account_acct = str(account_data.get("acct") or account_data.get("username") or "") if isinstance(account_data, dict) else ""
+            if not account_id:
+                raise SourceError("ACCOUNT_LOOKUP_NO_ACCOUNT_ID")
+            if account_acct and account_acct.split("@")[0].lower() != self.account.lower():
+                raise SourceError(f"ACCOUNT_LOOKUP_ACCOUNT_MISMATCH:{account_acct}")
 
         out: list[RawItem] = []
         max_id: str | None = None
@@ -103,7 +128,11 @@ class TruthTimelineCollector(SourceAdapter):
             }
             if max_id:
                 params["max_id"] = max_id
-            payload = self._get_json(f"{self.base_url}/api/v1/accounts/{quote_plus(account_id)}/statuses", params)
+            payload = self._get_json(
+                f"{self.base_url}/api/v1/accounts/{quote_plus(account_id)}/statuses",
+                params,
+                endpoint_name="ACCOUNT_STATUSES",
+            )
             if not isinstance(payload, list) or not payload:
                 break
             page_oldest: datetime | None = None
@@ -156,6 +185,142 @@ class TruthTimelineCollector(SourceAdapter):
         # The API commonly returns newest first. Explicit sorting is required by the V2.2 design.
         out.sort(key=lambda item: item.published_at)
         return out
+
+
+    def _observation(self, layer: str, status: str, displayed_text: str = "", note: str = "", eligible: bool = False, quality: str = "NONE") -> SourceObservation:
+        return SourceObservation(
+            source_key=self.name,
+            layer=layer,
+            status=status,
+            url=self.profile_url,
+            displayed_text=displayed_text[:2000],
+            note=note[:2000],
+            observed_at=datetime.now(timezone.utc),
+            eligible_for_event_engine=eligible,
+            evidence_quality=quality,
+        )
+
+    def _collect_rendered_html(self, start: datetime, end: datetime) -> list[RawItem]:
+        """Best-effort browser rendering. It never bypasses login or access controls."""
+        try:
+            from playwright.sync_api import sync_playwright
+        except Exception as exc:
+            self.last_observations.append(self._observation(
+                "RENDERED_HTML", "RENDERER_NOT_AVAILABLE", note=f"Playwright unavailable: {type(exc).__name__}"
+            ))
+            return []
+        rows: list[RawItem] = []
+        try:
+            with sync_playwright() as pw:
+                browser = pw.chromium.launch(headless=True)
+                page = browser.new_page(user_agent=self.headers["User-Agent"])
+                page.goto(self.profile_url, wait_until="domcontentloaded", timeout=self.rendered_timeout * 1000)
+                page.wait_for_timeout(3500)
+                body_text = (page.locator("body").inner_text(timeout=5000) or "").strip()
+                if re.search(r"log\s*in|sign\s*in", body_text, re.I) and len(body_text) < 1200:
+                    self.last_observations.append(self._observation("RENDERED_HTML", "LOGIN_REQUIRED", body_text, "公開頁要求登入；請由官方網址自行查閱。"))
+                    browser.close(); return []
+                candidates = page.locator("article, [data-testid='status'], .status, .entry").all()
+                for idx, node in enumerate(candidates[:80]):
+                    try:
+                        text=(node.inner_text(timeout=1500) or "").strip()
+                    except Exception:
+                        continue
+                    if len(text) < 15:
+                        continue
+                    link=""
+                    try:
+                        href=node.locator("a[href*='/@realDonaldTrump/']").first.get_attribute("href") or ""
+                        link = href if href.startswith("http") else self.base_url + href
+                    except Exception:
+                        pass
+                    dt=end
+                    try:
+                        raw_dt=node.locator("time").first.get_attribute("datetime") or ""
+                        if raw_dt: dt=datetime.fromisoformat(raw_dt.replace("Z", "+00:00")).astimezone(timezone.utc)
+                    except Exception:
+                        pass
+                    if not start <= dt <= end:
+                        continue
+                    rid=sha256((link+text[:200]).encode()).hexdigest()[:16]
+                    rows.append(RawItem(
+                        raw_item_id=f"TRUTH-RENDERED-{rid}", source_name="Truth Social Rendered Public Page",
+                        publisher_group="Truth Social Official", source_type="DIRECT_POST", published_at=dt,
+                        title=text[:160], body=text, url=link or self.profile_url, source_confidence=.82,
+                        direct_quote=True, source_tier=2, source_role="VERIFICATION",
+                        acquisition_method="RENDERED_PUBLIC_PAGE", account_handle=self.account,
+                        content_status="SUCCESS_RENDERED_PARTIAL", ai_summary_status="PENDING_ANALYSIS",
+                    ))
+                browser.close()
+                if rows:
+                    self.last_observations.append(self._observation("RENDERED_HTML", "SUCCESS_RENDERED_PARTIAL", f"Rendered posts: {len(rows)}", "畫面可見內容已記錄；可能不是完整時間軸。", True, "PARTIAL_FIRST_PARTY"))
+                else:
+                    status="STATIC_HTML_JS_REQUIRED" if "enable javascript" in body_text.lower() else "RENDERED_NO_POSTS"
+                    self.last_observations.append(self._observation("RENDERED_HTML", status, body_text, "未辨識到可送入事件引擎的公開貼文；請點官方頁查閱。"))
+        except Exception as exc:
+            self.last_observations.append(self._observation("RENDERED_HTML", "RENDERED_HTML_FAILED", note=f"{type(exc).__name__}: {exc}"))
+        rows.sort(key=lambda item: item.published_at)
+        return rows
+
+    def _collect_static_html(self) -> None:
+        if not self.static_html_enabled:
+            return
+        try:
+            r=self.session.get(self.profile_url, headers={"User-Agent": self.headers["User-Agent"], "Accept": "text/html"}, timeout=self.timeout)
+            text=self._clean_content(getattr(r,"text",""))
+            if r.status_code == 401:
+                status="LOGIN_REQUIRED"
+            elif r.status_code == 403:
+                status="ACCESS_DENIED"
+            elif r.status_code == 429:
+                status="RATE_LIMIT"
+            elif r.status_code != 200:
+                status=f"STATIC_HTML_HTTP_{r.status_code}"
+            elif "enable javascript" in text.lower():
+                status="STATIC_HTML_PAGE_SHELL"
+            elif text:
+                status="STATIC_HTML_VISIBLE_TEXT"
+            else:
+                status="STATIC_HTML_EMPTY"
+            note="公開頁可開啟，但未取得可送入事件引擎的貼文正文；請點擊官方頁面自行查閱。"
+            self.last_observations.append(self._observation("STATIC_HTML", status, text, note, False, "REFERENCE_ONLY"))
+        except requests.RequestException as exc:
+            self.last_observations.append(self._observation("STATIC_HTML", "STATIC_HTML_CONNECTION_FAILED", note=str(exc)))
+
+    def collect(self, start: datetime, end: datetime) -> list[RawItem]:
+        self.last_observations=[]
+        json_error=""
+        try:
+            rows=self._collect_json(start,end)
+            if rows:
+                self.last_status=f"SUCCESS_FULL_TEXT:{len(rows)}"
+                self.last_observations.append(self._observation("OFFICIAL_TIMELINE_JSON", "SUCCESS_FULL_TEXT", f"Official posts: {len(rows)}", "完整JSON貼文已送入事件引擎。", True, "PRIMARY"))
+                return rows
+            self.last_observations.append(self._observation("OFFICIAL_TIMELINE_JSON", "NO_POSTS_IN_72H", note="JSON端點成功，但72小時內沒有貼文。"))
+        except SourceError as exc:
+            json_error=str(exc)
+            self.last_observations.append(self._observation("OFFICIAL_TIMELINE_JSON", json_error, note="JSON端點失敗，繼續Rendered/Static HTML備援。"))
+        rendered=[]
+        if self.rendered_html_enabled:
+            rendered=self._collect_rendered_html(start,end)
+        if rendered:
+            self.last_status=f"SUCCESS_RENDERED_PARTIAL:{len(rendered)}"
+            return rendered
+        self._collect_static_html()
+        statuses=[o.status for o in self.last_observations]
+        if "STATIC_HTML_PAGE_SHELL" in statuses:
+            self.last_status="STATIC_HTML_PAGE_SHELL"
+        elif "LOGIN_REQUIRED" in statuses:
+            self.last_status="LOGIN_REQUIRED"
+        elif "ACCESS_DENIED" in statuses or any("ACCESS_DENIED" in x for x in statuses):
+            self.last_status="ACCESS_DENIED"
+        elif "RATE_LIMIT" in statuses or any("RATE_LIMIT" in x for x in statuses):
+            self.last_status="RATE_LIMIT"
+        elif "NO_POSTS_IN_72H" in statuses:
+            self.last_status="NO_POSTS_IN_72H"
+        else:
+            self.last_status=json_error or (statuses[-1] if statuses else "NO_DATA")
+        return []
 
 
 class TruthOfficialApiAdapter(SourceAdapter):
