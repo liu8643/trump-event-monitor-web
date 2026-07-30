@@ -36,7 +36,7 @@ except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.3.1"
+APP_VERSION = "2.3.4"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -62,8 +62,12 @@ def build_adapters(mode: str):
     if config.truth_official_timeline_enabled:
         adapters.append(TruthTimelineCollector(
             config.truth_profile_url, config.truth_account,
+            account_id=config.truth_official_account_id,
             timeout=config.truth_official_timeline_timeout,
             max_pages=config.truth_official_timeline_max_pages,
+            rendered_html_enabled=config.truth_rendered_html_enabled,
+            static_html_enabled=config.truth_static_html_enabled,
+            rendered_timeout=config.truth_rendered_timeout,
         ))
     truth_api_url = os.getenv("TRUTH_API_BASE_URL") or config.truth_api_base_url
     if truth_api_url and os.getenv("TRUTH_API_TOKEN"):
@@ -176,6 +180,15 @@ if page == "首頁總覽":
             st.warning("部分來源失敗；請查看『詳細狀態』、來源設定或系統 Log。其他成功來源仍會繼續分析。")
         elif health_summary["no_data"]:
             st.info("部分來源在最近72小時沒有資料；這不等同於連線失敗。")
+
+        truth_notes=[o for o in result.source_observations if o.source_key=="truth_official_timeline"]
+        if truth_notes:
+            with st.expander("Truth Official 四層取得紀錄／人工查閱", expanded=not bool(result.source_counts.get("truth_official_timeline",0))):
+                st.link_button("開啟 Truth Social 官方帳號自行查閱", config.truth_profile_url)
+                st.dataframe(pd.DataFrame([{
+                    "層級":o.layer,"狀態":o.status,"畫面/回傳內容":o.displayed_text,"備註":o.note,
+                    "可進事件引擎":o.eligible_for_event_engine,"證據品質":o.evidence_quality,"網址":o.url
+                } for o in truth_notes]), width="stretch", hide_index=True)
 
         rows=[]
         for e in result.events:
@@ -348,6 +361,8 @@ elif page == "來源設定":
         )
         with st.expander("原始來源狀態（工程用）"):
             st.write("來源狀態", result.source_status)
+            if result.source_observations:
+                st.write("來源觀察紀錄（含Static HTML／人工查閱備註）", [o.model_dump(mode="json") for o in result.source_observations])
             st.write("來源筆數", result.source_counts)
             st.write("Truth Social 狀態", result.truth_social_status)
     st.info("正式來源失敗時會明確顯示FAILED／RATE_LIMIT／LOGIN_REQUIRED等原因，不會以Sample替代。")
