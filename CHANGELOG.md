@@ -1,3 +1,14 @@
+# V2.3.4
+- Truth Official 四層來源：JSON、Rendered HTML、Static HTML、人工查閱備註。
+- Static page shell會保存但不進Event Engine。
+- 新增SourceObservation與Excel/UI追溯。
+- Rendered HTML採可選Playwright，無瀏覽器時明示RENDERER_NOT_AVAILABLE。
+
+# V2.3.2
+- Truth Official Timeline改為優先使用已知且可設定的realDonaldTrump account ID，避免先呼叫容易被WAF拒絕的accounts/lookup端點。
+- 失敗狀態分開標示ACCOUNT_LOOKUP與ACCOUNT_STATUSES，並保留HTTP狀態與Cloudflare診斷資訊。
+- 原有授權API、人工匯入、Search Index與所有媒體來源完整保留。
+
 ## 2.3.0 - 2026-07-30
 - Added a homepage source-health dashboard for Truth Official, Truth Search, Reuters, AP, Bloomberg, CNBC, Google RSS, NewsAPI and GNews.
 - Added per-source count, health state, coverage bar, role and detailed raw status.
