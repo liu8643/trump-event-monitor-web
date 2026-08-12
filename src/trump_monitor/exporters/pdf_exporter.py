@@ -13,10 +13,10 @@ def export_pdf(result: RunResult,path: str|Path):
         if Path(fp).exists():
             try: pdfmetrics.registerFont(TTFont('CJK',fp)); font='CJK'; break
             except Exception: pass
-    c=canvas.Canvas(str(out),pagesize=A4); w,h=A4; y=h-50; c.setFont(font,16); c.drawString(40,y,'Trump 72-hour Event Report'); y-=28
+    c=canvas.Canvas(str(out),pagesize=A4); w,h=A4; y=h-50; c.setFont(font,14); c.drawString(40,y,'Trump 72-hour Event Report / 川普72小時事件報告'); y-=28
     c.setFont(font,9); c.drawString(40,y,f'Run ID: {result.run_id} / Status: {result.status}'); y-=24
     for e in result.events:
-        lines=[('★'*e.score.importance+' '+e.topic)[:70],e.summary[:150],f'{e.category} / confidence {e.score.confidence:.0%} / {e.battle_action}']
+        lines=[('★'*e.score.importance+' '+e.topic)[:78],('中文: '+(e.topic_zh or '翻譯未取得'))[:78],('EN: '+e.summary)[:100],('中文摘要: '+(e.summary_zh or '翻譯未取得'))[:100],f'{e.category} / confidence {e.score.confidence:.0%} / materiality {e.materiality_score}/100 / {e.battle_action}']
         for line in lines:
             if y<60: c.showPage(); c.setFont(font,9); y=h-50
             c.drawString(40,y,line); y-=16

@@ -16,6 +16,7 @@ class RawItem(BaseModel):
     source_type: SourceType
     published_at: datetime
     title: str
+    title_zh: str = ""
     body: str = ""
     url: str
     source_confidence: float = Field(ge=0, le=1, default=0.5)
@@ -29,6 +30,8 @@ class RawItem(BaseModel):
     ai_sentiment: str = "中性"
     ai_provider: str = "RULE_EXTRACTIVE_V2"
     ai_summary_status: str = "EXTRACTIVE_SNIPPET"
+    translation_provider: str = "NONE"
+    translation_status: str = "NOT_RUN"
 
 
 class SourceObservation(BaseModel):
@@ -68,8 +71,11 @@ class MarketImpact(BaseModel):
 class EventCluster(BaseModel):
     event_id: str
     topic: str
+    topic_zh: str = ""
     category: str
     summary: str
+    summary_zh: str = ""
+    translation_status: str = "NOT_RUN"
     first_seen: datetime
     last_seen: datetime
     source_count: int

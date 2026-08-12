@@ -51,28 +51,28 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     wb = Workbook()
     ws = wb.active
     ws.title = "01_三日重大摘要"
-    _style_title(ws, 21, "川普最近三天新聞與市場影響｜真正重大事件專業情報輸出")
-    ws.merge_cells("A2:U2")
+    _style_title(ws, 24, "川普最近三天新聞與市場影響｜真正重大事件專業情報輸出｜English + 繁體中文")
+    ws.merge_cells("A2:X2")
     ws["A2"] = f"Run ID：{result.run_id}｜Rule：{result.rule_version}｜Prompt：{result.prompt_version}｜Schema：{result.schema_version}｜Status：{result.status}｜Data Mode：{result.data_mode}｜Truth Social：{result.truth_social_status}"
     ws["A2"].fill = NOTE_FILL; ws["A2"].alignment = Alignment(wrap_text=True)
     ws.append([]); ws.append(["事件總數", len(result.events), "真正重大事件數", sum(e.is_material for e in result.events), "資料來源", ", ".join(result.source_status), "警告數", len(result.warnings)])
-    headers = ["排名","事件ID","事件日期","最新更新時間","重要度","事件分數","重大性分數","重大性等級","真正重大","主題","類別","摘要重點","消息來源數","可信度","美股分數","台股分數","原油分數","黃金分數","受惠方向","受壓方向","GTC建議"]
+    headers = ["排名","事件ID","事件日期","最新更新時間","重要度","事件分數","重大性分數","重大性等級","真正重大","主題(English)","主題(中文)","類別","摘要(English)","摘要(中文)","翻譯狀態","消息來源數","可信度","美股分數","台股分數","原油分數","黃金分數","受惠方向","受壓方向","GTC建議"]
     _header(ws, 8, headers)
     for rank, e in enumerate(result.events, 1):
         impact = {x.asset: x.final_score for x in e.impacts}
-        ws.append([rank,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),"★"*e.score.importance,e.score.rule_score,e.materiality_score,e.materiality_level,"是" if e.is_material else "否",e.topic,e.category,e.summary,e.source_count,e.score.confidence,impact.get("美股",0),impact.get("台股",0),impact.get("原油",0),impact.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action])
-    _body(ws,9,8+len(result.events),21); _widths(ws,{1:7,2:24,3:14,4:20,5:12,6:11,7:13,8:13,9:12,10:32,11:20,12:50,13:12,14:12,15:11,16:11,17:11,18:11,19:30,20:30,21:13})
+        ws.append([rank,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),"★"*e.score.importance,e.score.rule_score,e.materiality_score,e.materiality_level,"是" if e.is_material else "否",e.topic,e.topic_zh,e.category,e.summary,e.summary_zh,e.translation_status,e.source_count,e.score.confidence,impact.get("美股",0),impact.get("台股",0),impact.get("原油",0),impact.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action])
+    _body(ws,9,8+len(result.events),24); _widths(ws,{1:7,2:24,3:14,4:20,5:12,6:11,7:13,8:13,9:12,10:42,11:42,12:20,13:48,14:48,15:28,16:12,17:12,18:11,19:11,20:11,21:11,22:30,23:30,24:13})
     ws.freeze_panes = "A9"
 
     ws2 = wb.create_sheet("02_新聞明細")
-    _style_title(ws2,16,"最近三天新聞明細與來源｜證據鏈與來源優先級")
-    headers2=["發布時間","事件ID","新聞標題","來源","Publisher Group","主題分類","來源可信度","來源類型","優先級Tier","驗證角色","取得方式","是否直接引用","是否重複","Duplicate Of","事件群組","來源網址"]
+    _style_title(ws2,20,"最近三天新聞明細與來源｜English + 繁體中文｜證據鏈與來源優先級")
+    headers2=["發布時間","事件ID","新聞標題(English)","新聞標題(中文)","中文摘要","翻譯器","翻譯狀態","來源","Publisher Group","主題分類","來源可信度","來源類型","優先級Tier","驗證角色","取得方式","是否直接引用","是否重複","Duplicate Of","事件群組","來源網址"]
     _header(ws2,3,headers2)
     row=4
     for e in result.events:
         for src in e.sources:
-            ws2.append([src.published_at.isoformat(),e.event_id,src.title,src.source_name,src.publisher_group,e.category,src.source_confidence,src.source_type,src.source_tier,src.source_role,src.acquisition_method,"是" if src.direct_quote else "否","否","",e.event_id,src.url]); row += 1
-    _body(ws2,4,row-1,16); _widths(ws2,{1:20,2:24,3:55,4:22,5:20,6:20,7:14,8:18,9:12,10:16,11:20,12:13,13:12,14:16,15:24,16:70}); ws2.freeze_panes="A4"
+            ws2.append([src.published_at.isoformat(),e.event_id,src.title,src.title_zh,src.ai_summary_zh,src.translation_provider,src.translation_status,src.source_name,src.publisher_group,e.category,src.source_confidence,src.source_type,src.source_tier,src.source_role,src.acquisition_method,"是" if src.direct_quote else "否","否","",e.event_id,src.url]); row += 1
+    _body(ws2,4,row-1,20); _widths(ws2,{1:20,2:24,3:55,4:55,5:55,6:24,7:32,8:22,9:20,10:20,11:14,12:18,13:12,14:16,15:20,16:13,17:12,18:16,19:24,20:70}); ws2.freeze_panes="A4"
 
     ws3 = wb.create_sheet("03_市場影響")
     _style_title(ws3,10,"市場影響推估｜Rule 70%＋AI 30%")
@@ -119,6 +119,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
         ["來源優先順序"," → ".join(result.source_priority),"Truth第一手、主流媒體驗證、聚合補充","來源缺口","逐來源狀態與筆數","優先順序可見",""],
         ["資料來源",str(result.source_status),"多Adapter","來源失效","降級與警告","來源缺口可見",str(result.source_counts)],
         ["Truth Social",result.truth_social_status,"授權API/人工匯入/搜尋索引","未取得第一手貼文","明確狀態且不以Sample替代","狀態可見",""],
+        ["雙語翻譯","English原文永久保留；繁中欄位另存","翻譯不參與去重/聚類/重大性評分","外部翻譯服務可能暫時失效","失敗時顯示翻譯未取得，不覆蓋英文原文","雙語欄位可追溯","TRANSLATION_PROVIDER=AUTO/LLM/GOOGLE_WEB"],
         ["市場分數","Rule 70%＋AI 30%","AI失敗Rule-only","不是價格預測","信心與期間","可拆解",""],
         ["投資限制","事件情報用途","不得單獨下單","快速反轉","人工確認","不產直接買點",""],
     ]
@@ -144,9 +145,10 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
       ["GTC WatchList","JSON/CSV review-required輸出","未直接寫外部GTC DB","REVIEW_REQUIRED","PASS"],
       ["Word/PDF","一鍵下載","PDF字型依部署環境","fallback字型","PASS"],
       ["每5分鐘更新","頁面開啟自動刷新＋GitHub排程","Cloud sleep/GitHub cron可能延遲","best effort","PASS"],
+      ["中英文同步","英文原文＋繁中翻譯欄位；UI/Excel/Word/PDF/HTML/JSON共用","AUTO預設LLM或Google Web best-effort；外部服務可能失效","翻譯失敗不影響英文原文與事件判斷","PASS"],
       ["歷史資料庫","run/event/source/impact/watchlist SQLite","Streamlit本機磁碟非永久","建議外接PostgreSQL/S3","PASS"],
     ]: ws8.append(r)
-    _body(ws8,4,11,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
+    _body(ws8,4,12,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
 
     ws9 = wb.create_sheet("09_來源健康")
     _style_title(ws9,6,"來源執行狀態與筆數｜CNBC獨立可追溯")

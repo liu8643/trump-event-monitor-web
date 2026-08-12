@@ -15,6 +15,7 @@ from trump_monitor.collectors.source_policy import SOURCE_PRIORITY_LABELS
 from trump_monitor.ai_service import analyze
 from trump_monitor.taiwan_stocks import rank_candidates
 from trump_monitor.logging_utils import get_logger, log_exception
+from trump_monitor.translation import contains_cjk, translate_many
 
 logger = get_logger("engine")
 
@@ -50,10 +51,16 @@ class TrumpEventEngine:
 
         unique,_=deduplicate(raw)
         categories: dict[str,str] = {}
+        summary_candidates: dict[str, str] = {}
+        translation_inputs: list[str] = []
         for item in unique:
             item.source_type=classify_source_type(item)  # type: ignore[misc]
             ai=analyze(item.title,item.body)
-            item.ai_summary_zh=ai.summary_zh; item.ai_sentiment=ai.sentiment; item.ai_provider=ai.provider; item.ai_summary_status=ai.summary_status
+            item.ai_sentiment=ai.sentiment; item.ai_provider=ai.provider; item.ai_summary_status=ai.summary_status
+            summary_candidate=(ai.summary_zh or "").strip()
+            summary_candidates[item.raw_item_id]=summary_candidate
+            # Translation is enrichment only. Original English title/body remain the evidence used by dedup/clustering/scoring.
+            translation_inputs.append(item.title)
             if item.acquisition_method in {"LICENSED_API", "MANUAL_IMPORT"} and item.body:
                 item.content_status="FULL_OR_LICENSED"
             elif item.body:
@@ -66,6 +73,32 @@ class TrumpEventEngine:
                 category=ai.category or deterministic
             categories[item.raw_item_id]=category
 
+        translations=translate_many(translation_inputs)
+        translated_items=0
+        for item in unique:
+            title_key=" ".join(item.title.split()).strip()
+            title_result=translations.get(title_key)
+            if title_result and title_result.text_zh:
+                item.title_zh=title_result.text_zh; translated_items += 1
+            summary_candidate=summary_candidates.get(item.raw_item_id, "")
+            if contains_cjk(summary_candidate):
+                item.ai_summary_zh=summary_candidate
+                summary_status="LLM_ZH_SUMMARY"
+                summary_provider=item.ai_provider
+            elif item.title_zh:
+                # Rule fallback has no genuine Chinese abstract. Use the translated headline and label it truthfully.
+                item.ai_summary_zh=item.title_zh
+                item.ai_summary_status="TRANSLATED_TITLE_FALLBACK"
+                summary_status="TITLE_TRANSLATION_AS_SUMMARY"
+                summary_provider=title_result.provider if title_result else "NONE"
+            else:
+                item.ai_summary_zh=""
+                summary_status="UNAVAILABLE"
+                summary_provider=title_result.provider if title_result else "NONE"
+            item.translation_provider=(title_result.provider if title_result else summary_provider)
+            item.translation_status=f"TITLE:{title_result.status if title_result else 'NOT_RUN'};SUMMARY:{summary_status}"
+        logger.info("bilingual enrichment | items=%d | title_zh=%d", len(unique), translated_items)
+
         grouped=cluster_items(unique,categories)
         logger.info("event clustering | raw=%d | unique=%d | clusters=%d", len(raw), len(unique), len(grouped))
         events=[]
@@ -76,9 +109,10 @@ class TrumpEventEngine:
             event_id=f"TRUMP-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d}-{idx:03d}"
             action="REDUCE" if score.final_score<=-3 and score.confidence>=.8 else "WATCH"
             beneficiary=sorted({x for i in impacts for x in i.beneficiary.split("、") if x}); negative=sorted({x for i in impacts for x in i.negative.split("、") if x})
-            summary=top.ai_summary_zh or (top.body or top.title)[:500]
+            summary_en=(top.body or top.title).strip().replace("\n"," ")[:500]
+            summary_zh=top.ai_summary_zh or top.title_zh
             materiality_score, materiality_level, is_material = score_materiality(items, category, score)
-            events.append(EventCluster(event_id=event_id,topic=top.title,category=category,summary=summary,
+            events.append(EventCluster(event_id=event_id,topic=top.title,topic_zh=top.title_zh,category=category,summary=summary_en,summary_zh=summary_zh,translation_status=top.translation_status,
                 first_seen=min(x.published_at for x in items),last_seen=max(x.published_at for x in items),source_count=len({x.publisher_group for x in items}),
                 sources=ordered,score=score,impacts=impacts,beneficiary_sectors=beneficiary,negative_sectors=negative,battle_action=action,
                 event_label=category.replace("／","_").replace(" ","_").upper(),data_freshness="SAMPLE" if self.config.sample_mode else "CURRENT",
@@ -107,7 +141,7 @@ class TrumpEventEngine:
             truth_status="NO_POSTS_IN_WINDOW"
         result=RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.8",prompt_version="TRUMP_PROMPT_V2.3.8",model_version="V237_LIVE_EVIDENCE_CLUSTER_MATERIALITY_V2.3.8",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.3.9",prompt_version="TRUMP_PROMPT_V2.3.9",model_version="V238_BILINGUAL_TRANSLATION_UI_CONFIDENCE_V2.3.9",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])
         logger.info("run complete | run_id=%s | status=%s | events=%d | material=%d | warnings=%d", result.run_id, result.status, len(events), sum(e.is_material for e in events), len(warnings))
