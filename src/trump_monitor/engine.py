@@ -33,9 +33,14 @@ class TrumpEventEngine:
                 rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows)
                 adapter_state=getattr(adapter,"last_status","")
                 source_status[adapter.name]=adapter_state or (f"SUCCESS:{len(rows)}" if rows else "NO_DATA:0")
-                source_observations.extend(getattr(adapter,"last_observations",[]) or [])
+                observations=getattr(adapter,"last_observations",[]) or []
+                source_observations.extend(observations)
                 logger.debug("adapter complete | %s | rows=%d | state=%s", adapter.name, len(rows), source_status[adapter.name])
-                if adapter_state and not adapter_state.startswith("SUCCESS") and adapter_state not in {"NO_POSTS_IN_72H","NO_DATA:0"}: warnings.append(f"{adapter.name}: {adapter_state}")
+                for obs in observations:
+                    logger.debug("source observation | %s | layer=%s | status=%s | eligible=%s | quality=%s | note=%s", adapter.name, obs.layer, obs.status, obs.eligible_for_event_engine, obs.evidence_quality, " ".join(obs.note.split())[:240])
+                if adapter_state and not adapter_state.startswith("SUCCESS") and adapter_state not in {"NO_POSTS_IN_72H","NO_DATA:0"}:
+                    warnings.append(f"{adapter.name}: {adapter_state}")
+                    logger.warning("source degraded | %s | state=%s", adapter.name, adapter_state)
             except Exception as exc:
                 source_counts[adapter.name]=0
                 detail=" ".join(str(exc).split())[:180] or type(exc).__name__
@@ -80,7 +85,8 @@ class TrumpEventEngine:
                 primary_source_present=any(x.source_tier==1 for x in items),verification_source_count=len({x.publisher_group for x in items if x.source_tier==2}),
                 materiality_score=materiality_score,materiality_level=materiality_level,is_material=is_material))
         events.sort(key=lambda e:(e.is_material,e.materiality_score,e.score.importance,e.primary_source_present,e.verification_source_count,e.score.confidence,e.last_seen),reverse=True)
-        candidates=rank_candidates([e for e in events if e.is_material] or events)
+        material_events=[e for e in events if e.is_material]
+        candidates=rank_candidates(material_events)
         for e in events: e.taiwan_candidates=[x for x in candidates if e.event_id in x.get("reasons","")][:10]
         status="SUCCESS" if events and not warnings else "PARTIAL" if events else ("SOURCE_FAILED" if warnings else "DATA_UNAVAILABLE")
         truth_sources={k:v for k,v in source_status.items() if k.startswith("truth_")}
@@ -91,13 +97,17 @@ class TrumpEventEngine:
             truth_status=f"OFFICIAL_TIMELINE_SUCCESS:{official_count};FALLBACK:{fallback_count}"
         elif official_state.startswith("FAILED"):
             truth_status=f"OFFICIAL_TIMELINE_FAILED:{official_state};FALLBACK:{fallback_count}"
+        elif official_state in {"ACCESS_DENIED", "LOGIN_REQUIRED"} or "ACCESS_DENIED" in official_state or "HTTP_403" in official_state:
+            truth_status=f"OFFICIAL_TIMELINE_ACCESS_DENIED:{official_state};SEARCH_FALLBACK:{fallback_count}"
+        elif official_state in {"NO_POSTS_IN_72H", "NO_DATA:0"}:
+            truth_status=f"OFFICIAL_TIMELINE_NO_POSTS;SEARCH_FALLBACK:{fallback_count}" if fallback_count else "OFFICIAL_TIMELINE_NO_POSTS"
         elif fallback_count:
-            truth_status=f"OFFICIAL_TIMELINE_NO_POSTS;FALLBACK:{fallback_count}"
+            truth_status=f"OFFICIAL_TIMELINE_UNAVAILABLE:{official_state};SEARCH_FALLBACK:{fallback_count}"
         else:
             truth_status="NO_POSTS_IN_WINDOW"
         result=RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.7",prompt_version="TRUMP_PROMPT_V2.3.7",model_version="V235_BASE_EVENT_CLUSTER_MATERIALITY_V2.3.7",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.3.8",prompt_version="TRUMP_PROMPT_V2.3.8",model_version="V237_LIVE_EVIDENCE_CLUSTER_MATERIALITY_V2.3.8",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])
         logger.info("run complete | run_id=%s | status=%s | events=%d | material=%d | warnings=%d", result.run_id, result.status, len(events), sum(e.is_material for e in events), len(warnings))
