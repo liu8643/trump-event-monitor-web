@@ -45,3 +45,7 @@ Truth full text requires licensed API or manual import. Search-index data remain
 - AP News / Associated Press publisher alias 納入來源健康統計。
 - `output/logs/` 保存 `runtime.log`、`debug.log`、`error.log`，Streamlit「系統Log」及「報表中心」均可下載 Debug Log ZIP。
 - SAMPLE 測試固定評估時間，避免固定樣本因執行日期漂移導致 72 小時窗假失敗。
+
+## V2.3.8 Live Evidence corrections
+
+V2.3.8 is a corrective release based on the 2026-08-12 17:44 Streamlit Cloud run. It fixes duplicate event fragmentation, the all-zero Materiality outcome for verified high-severity events, false Taiwan-candidate fallback when no material event exists, misleading Truth Official `NO_POSTS` status under HTTP 403, and adds richer downloadable source-layer debug evidence.

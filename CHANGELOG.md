@@ -1,3 +1,13 @@
+# V2.3.8 (2026-08-12) — Live Evidence Corrective Release
+
+- Based strictly on the deployed V2.3.7 source and the 2026-08-12 17:44 live run evidence.
+- Fix cross-category duplicate fragmentation with conservative event-family clustering for presidential security flight-change coverage and other narrow event signatures.
+- Add semantic severity bonus to Materiality so verified military/security actions can clear the 65 gate without relying on accidental duplicate count.
+- Remove the contradictory candidate fallback: Taiwan candidates are now produced only from `is_material=True` events.
+- Correct Truth Official status: HTTP 403 / ACCESS_DENIED is no longer reported as `NO_POSTS`; search-index fallback is explicitly labeled.
+- Expand downloadable debug evidence with source observation layer/status/evidence-quality and degraded-source warning log lines.
+- Live regression tests added for the 17:44 failure modes.
+
 ## 2.3.5
 - 修正 Playwright 只有套件但缺 Chromium 執行檔：新增 packages.txt、系統 Chromium 偵測與 GitHub Workflow 安裝。
 - Static HTML 遇到 Cloudflare challenge 改為精簡紀錄，不再把整段 challenge script 寫入報表。
