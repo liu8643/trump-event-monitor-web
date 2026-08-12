@@ -1,0 +1,19 @@
+Live run evidence: TRUMP-RUN-20260812-174429
+===========================================
+Observed: raw=114, unique=91, clusters=75, material=0, status=PARTIAL.
+Truth Official: ACCOUNT_STATUSES HTTP 403 / Cloudflare; rendered HTML challenge; static HTML challenge.
+Actual downloaded logs: runtime.log/debug.log/error.log. error.log empty because no unhandled exception occurred.
+
+Root causes fixed:
+1. Duplicate coverage of the presidential secret-flight/security incident split across SECURITY / GEOPOLITICS / GENERAL and multiple 1-2-source clusters.
+2. Materiality depended too heavily on importance/duplicate aggregation and lacked semantic severity; Reuters Iran military-options story scored 62, below 65 despite high-impact content.
+3. Taiwan candidates incorrectly fell back to all events when material events were empty.
+4. Truth Official ACCESS_DENIED was summarized as NO_POSTS.
+5. Downloadable debug bundle existed, but source-layer observations / 403 details were not fully logged in debug text.
+
+V2.3.8 corrective actions:
+- conservative cross-category event-family clustering
+- semantic severity component for military/security/enacted-policy signals
+- candidate generation only from material events
+- truthful ACCESS_DENIED state propagation
+- richer source-observation/degradation logging

@@ -46,3 +46,4 @@ scoring:
 export:
   output_dir: "output"
   schema_version: "gtc.trump_event.v2.2"
+

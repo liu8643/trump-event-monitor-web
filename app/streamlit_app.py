@@ -37,7 +37,7 @@ except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.3.8"
+APP_VERSION = "2.3.9"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -114,7 +114,7 @@ def get_result():
 
 with st.sidebar:
     st.title("📡 Trump News Center")
-    st.caption(f"正式版本 v{APP_VERSION}｜V2.3.5基線修正版：事件聚類、重大性Gate、分類防誤判、Debug Log可下載")
+    st.caption(f"正式版本 v{APP_VERSION}｜中英文同步：英文原文保留＋繁體中文翻譯；事件聚類/重大性Gate/Debug Log維持")
     page = st.radio("功能", [
         "首頁總覽","事件中心","事件分析","新聞明細","Truth貼文","市場影響","台股候選","GTC預覽","報表中心","歷史執行","來源設定","系統Log"
     ])
@@ -196,10 +196,10 @@ if page == "首頁總覽":
 
         rows=[]
         for e in result.events:
-            rows.append({"星等":"★"*e.score.importance,"主題":e.topic,"類別":e.category,"可信度":e.score.confidence,"GTC":e.battle_action,"最新時間":e.last_seen})
+            rows.append({"星等":"★"*e.score.importance,"主題（English）":e.topic,"主題（中文）":e.topic_zh or "—","類別":e.category,"可信度":round(e.score.confidence*100),"重大性":e.materiality_score,"GTC":e.battle_action,"最新時間":e.last_seen})
         if rows:
             df=pd.DataFrame(rows)
-            st.dataframe(df, width="stretch", hide_index=True, column_config={"可信度":st.column_config.ProgressColumn(min_value=0,max_value=1,format="%.0f%%")})
+            st.dataframe(df, width="stretch", hide_index=True, column_config={"可信度":st.column_config.ProgressColumn("可信度",min_value=0,max_value=100,format="%d%%"),"重大性":st.column_config.ProgressColumn("重大性",min_value=0,max_value=100,format="%d")})
             impact_rows=[]
             for e in result.events:
                 for i in e.impacts: impact_rows.append({"事件":e.event_id,"資產":i.asset,"分數":i.final_score})
@@ -211,7 +211,7 @@ elif page == "事件中心":
     result=get_result()
     if not result: st.info("尚無分析結果。")
     else:
-        options={f"{'★'*e.score.importance} {e.topic}":e for e in result.events}
+        options={f"{'★'*e.score.importance} {e.topic}｜{e.topic_zh or '翻譯未取得'}":e for e in result.events}
         selected=st.selectbox("選擇事件", list(options))
         e=options[selected]
         c1,c2=st.columns([1,2])
@@ -221,8 +221,11 @@ elif page == "事件中心":
             st.metric("GTC",e.battle_action)
             st.json(e.score.breakdown)
         with c2:
-            st.subheader(e.topic); st.write(e.summary)
-            st.caption(f"Event ID: {e.event_id}｜{e.first_seen} → {e.last_seen}")
+            st.subheader(e.topic)
+            st.markdown(f"**中文：** {e.topic_zh or '翻譯未取得'}")
+            st.write(e.summary)
+            st.info(f"中文摘要：{e.summary_zh or '翻譯未取得'}")
+            st.caption(f"翻譯狀態：{e.translation_status}｜Event ID: {e.event_id}｜{e.first_seen} → {e.last_seen}")
             st.write("受惠：", "、".join(e.beneficiary_sectors) or "無")
             st.write("受壓：", "、".join(e.negative_sectors) or "無")
 
@@ -232,7 +235,7 @@ elif page == "事件分析":
     if not result: st.info("尚無分析結果。")
     else:
         for e in result.events:
-            with st.expander(f"{'★'*e.score.importance} {e.topic}"):
+            with st.expander(f"{'★'*e.score.importance} {e.topic}｜{e.topic_zh or '翻譯未取得'}"):
                 st.json(e.score.model_dump())
                 st.dataframe(pd.DataFrame([i.model_dump() for i in e.impacts]),width="stretch",hide_index=True)
                 st.info("人工覆核功能於正式資料庫版本可寫入 manual_reviews；本 MVP 保留介面規格，不修改附件中的既有 GTC 作戰等級。")
@@ -245,7 +248,7 @@ elif page == "新聞明細":
         rows=[]
         for e in result.events:
             for s in e.sources:
-                rows.append({"發布時間":s.published_at,"事件ID":e.event_id,"標題":s.title,"摘要":s.ai_summary_zh,"摘要方式":s.ai_summary_status,"分析器":s.ai_provider,"AI情緒":s.ai_sentiment,"內容狀態":s.content_status,"來源":s.source_name,"Publisher Group":s.publisher_group,"來源角色":s.source_type,"直接引用":s.direct_quote,"URL":s.url})
+                rows.append({"發布時間":s.published_at,"事件ID":e.event_id,"標題（English）":s.title,"標題（中文）":s.title_zh or "—","中文摘要":s.ai_summary_zh or "—","摘要方式":s.ai_summary_status,"分析器":s.ai_provider,"翻譯器":s.translation_provider,"翻譯狀態":s.translation_status,"AI情緒":s.ai_sentiment,"內容狀態":s.content_status,"來源":s.source_name,"Publisher Group":s.publisher_group,"來源角色":s.source_type,"直接引用":s.direct_quote,"URL":s.url})
         st.dataframe(pd.DataFrame(rows),width="stretch",hide_index=True,column_config={"URL":st.column_config.LinkColumn()})
 
 elif page == "Truth貼文":
@@ -266,10 +269,11 @@ elif page == "Truth貼文":
     for e,s in posts:
         with st.container(border=True):
             st.subheader(s.title)
+            st.markdown(f"**中文：** {s.title_zh or '翻譯未取得'}")
             if s.content_status=="FULL_OR_LICENSED": st.success("內容狀態：完整/授權原文")
             else: st.warning(f"內容狀態：{s.content_status}（不是完整原文）")
             st.write(s.body or "未取得文字內容")
-            st.info(f"摘要：{s.ai_summary_zh}｜摘要方式：{s.ai_summary_status}｜分析器：{s.ai_provider}｜情緒：{s.ai_sentiment}")
+            st.info(f"中文摘要：{s.ai_summary_zh or '翻譯未取得'}｜摘要方式：{s.ai_summary_status}｜分析器：{s.ai_provider}｜翻譯器：{s.translation_provider}｜翻譯狀態：{s.translation_status}｜情緒：{s.ai_sentiment}")
             if s.url: st.link_button("開啟原始貼文",s.url)
             st.caption(f"{e.event_id}｜取得方式：{s.acquisition_method}")
 
@@ -299,7 +303,7 @@ elif page == "GTC預覽":
         tabs=st.tabs(["今日策略","控制欄","宏觀16","三大劇本","每日追蹤"])
         top=result.events[:3]
         with tabs[0]:
-            for e in top: st.write(f"{'★'*e.score.importance}｜{e.category}｜{e.battle_action}｜{e.topic}")
+            for e in top: st.write(f"{'★'*e.score.importance}｜{e.category}｜{e.battle_action}｜{e.topic}｜中文：{e.topic_zh or '翻譯未取得'}")
         with tabs[1]: st.info("外部事件提示，不覆蓋既有盤中動態作戰等級。")
         with tabs[2]: st.write([{"event_id":e.event_id,"summary":e.summary} for e in top])
         with tabs[3]: st.write("Risk-Off" if any(e.battle_action=="REDUCE" for e in top) else "Neutral")

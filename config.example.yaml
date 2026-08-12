@@ -28,3 +28,4 @@ sources:
   newsapi: {enabled: true, priority: 4}
 scoring: {rule_weight: 0.7, ai_weight: 0.3, buy_ready_confidence: 0.8, buy_ready_abs_score: 3}
 export: {output_dir: "output", schema_version: "gtc.trump_event.v2.2"}
+

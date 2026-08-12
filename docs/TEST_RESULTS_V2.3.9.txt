@@ -1,0 +1,28 @@
+V2.3.9 Validation - 2026-08-12
+
+Baseline evidence:
+- Live V2.3.8 Run ID: TRUMP-RUN-20260812-181346
+- Debug: raw=118, unique=93, clusters=60, material=2, status=PARTIAL
+- Debug ZIP download verified: runtime.log/debug.log/error.log present
+- Streamlit Cloud startup completed successfully; application server started on 0.0.0.0:8501
+
+V2.3.9 changes verified:
+- Bilingual data model preserves English original and separate Traditional Chinese fields.
+- Translation enrichment is applied after dedup input preparation and is never used by dedup/clustering/materiality/scoring.
+- AUTO translation: configured OpenAI-compatible LLM first; otherwise Google Web best-effort; failure preserves English and exposes translation status.
+- Rule fallback no longer stores English extractive text as if it were ai_summary_zh; translated headline fallback is explicitly labeled TRANSLATED_TITLE_FALLBACK.
+- Streamlit confidence display converts 0..1 engine confidence to 0..100 UI progress; 0.766 displays as 77%, not 1%.
+- Excel/Word/PDF/HTML/JSON bilingual output paths updated. GTC 22-column machine schema preserved unchanged.
+- Translation provider/status is visible in source detail and Debug Log translation batch entries.
+
+Automated validation:
+- pytest: 47 passed / 0 failed
+- compileall: PASS (src/app/scripts/tests)
+- smoke_test SAMPLE: PASS; events=6; status=SUCCESS; artifacts=7
+- translation parser regression: PASS (mocked Google response)
+- bilingual model regression: PASS
+- UI confidence regression: PASS
+
+External translation note:
+- The execution sandbox used for engineering validation blocks outbound translation endpoint access, therefore real Google Web translation was not claimed as live-verified here.
+- Production Streamlit already has external network access for news collection; translation remains best-effort and visibly reports FAILED/UNAVAILABLE without changing event decisions.

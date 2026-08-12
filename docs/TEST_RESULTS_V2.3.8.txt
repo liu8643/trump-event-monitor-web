@@ -1,0 +1,10 @@
+V2.3.8 validation
+=================
+Baseline: deployed V2.3.7 package + live run TRUMP-RUN-20260812-174429 evidence.
+pytest: 43 passed / 0 failed
+compileall: PASS
+smoke: SAMPLE PASS; events=6; status=SUCCESS; artifacts=7
+live-evidence synthetic replay: presidential secret-flight cross-category coverage => 1 cluster / 6 publishers / materiality 79 RED
+Iran Reuters severity regression: materiality >=65 ORANGE+
+no-material candidate fallback regression: [] => []
+Debug Log: V2.3.7 live download proven present (runtime/debug/error); V2.3.8 adds source-observation detail and degraded-source warning lines.

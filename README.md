@@ -49,3 +49,9 @@ Truth full text requires licensed API or manual import. Search-index data remain
 ## V2.3.8 Live Evidence corrections
 
 V2.3.8 is a corrective release based on the 2026-08-12 17:44 Streamlit Cloud run. It fixes duplicate event fragmentation, the all-zero Materiality outcome for verified high-severity events, false Taiwan-candidate fallback when no material event exists, misleading Truth Official `NO_POSTS` status under HTTP 403, and adds richer downloadable source-layer debug evidence.
+
+### V2.3.9 中英文同步
+- 首頁與事件頁保留英文原標題，旁邊同步顯示繁體中文，不以翻譯取代證據原文。
+- `TRANSLATION_PROVIDER=AUTO`：若已設定 `AI_API_URL/AI_API_KEY/AI_MODEL`，優先使用相容 LLM；否則使用 Google Web translation best-effort。翻譯服務失敗不會改變事件聚類、重大性分數或英文原文。
+- 可用環境變數：`TRANSLATION_ENABLED`、`TRANSLATION_PROVIDER`、`TRANSLATION_API_URL`、`TRANSLATION_TIMEOUT_SECONDS`、`TRANSLATION_MAX_WORKERS`。
+- `GOOGLE_WEB_UNOFFICIAL` 為免金鑰 best-effort 路徑，服務可用性不保證；正式企業環境可設定 LLM endpoint。

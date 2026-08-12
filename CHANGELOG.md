@@ -92,3 +92,12 @@
 - Fixes AP News publisher alias in source-health counts.
 - Adds persistent rotating runtime/debug/error logs and downloadable Debug Log ZIP in Streamlit UI.
 - Fixes date-dependent SAMPLE repository regression test by pinning the intended sample evaluation time.
+
+## V2.3.9 — 2026-08-12 — English + 繁體中文同步
+- 新增 `translation.py`：英文新聞標題/摘要翻譯繁體中文；AUTO 優先已設定的相容 LLM，否則 Google Web best-effort；有 cache、timeout、parallel worker 與 Debug Log。
+- 原始英文永遠保留；翻譯欄位獨立存在，翻譯內容不參與去重、事件聚類、重大性與市場評分。
+- 修正 V2.3.8 `ai_summary_zh` 在 Rule fallback 時其實塞英文摘錄的語意錯誤；翻譯失敗時中文欄位留空並明確標示狀態。
+- Streamlit 首頁、事件中心、事件分析、新聞明細、Truth貼文、GTC預覽同步顯示 English + 中文。
+- Excel/Word/PDF/HTML/JSON 同步新增/輸出雙語欄位；GTC machine schema 保持原22欄不變以維持相容性。
+- 修正 Streamlit 可信度 ProgressColumn：0.766 不再顯示為 1%，改為 77%。
+- Debug Log 新增 translation batch success/provider 記錄。

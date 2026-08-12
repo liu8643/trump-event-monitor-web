@@ -1,0 +1,16 @@
+V2.3.9 modified/new files
+- src/trump_monitor/translation.py (NEW)
+- src/trump_monitor/models.py
+- src/trump_monitor/engine.py
+- src/trump_monitor/exporters/excel_exporter.py
+- src/trump_monitor/exporters/html_exporter.py
+- src/trump_monitor/exporters/docx_exporter.py
+- src/trump_monitor/exporters/pdf_exporter.py
+- app/streamlit_app.py
+- tests/test_v239_bilingual.py (NEW)
+- .env.example
+- pyproject.toml
+- README.md
+- CHANGELOG.md
+- docs/MODIFIED_FILES_V2.3.9.txt
+- docs/TEST_RESULTS_V2.3.9.txt
