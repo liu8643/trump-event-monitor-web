@@ -3,16 +3,18 @@ import re
 from trump_monitor.models import RawItem
 
 KEYWORDS = {
+    "總統安全／國安": [r"\bsecret service\b",r"\bair force one\b",r"\bsecret flight\b",r"\bassassinat",r"\bsecurity threat\b",r"\bthreats? against trump\b"],
+    "醫療／社會政策": [r"\bmedicaid\b",r"\bvaccine(s)?\b",r"\bmmr\b",r"gender[- ]affirming",r"transgender",r"\bhealth care\b",r"\bhealthcare\b"],
     "地緣政治／能源": [r"\biran\b",r"\bhormuz\b",r"\bwar\b",r"\bstrike(s|d)?\b",r"\bmilitary\b",r"\boil\b",r"\bisrael\b"],
     "關稅／國際貿易": [r"\btariff(s)?\b",r"\btrade\b",r"\bcustoms\b",r"\bdut(y|ies)\b"],
     "美國政治／選舉制度": [r"\bsenate\b",r"\belection\b",r"\bvot(e|ing)\b",r"\bcongress\b",r"\bballot\b",r"\bsupreme court\b",r"\bnominee\b"],
-    "社群訊號／TMTG": [r"truth social",r"\btmtg\b",r"\bdjt\b",r"posting spree"],
+    "社群訊號／TMTG": [r"\btmtg\b",r"\bdjt\b",r"truth social (traffic|revenue|contract|subscription|business)",r"posting spree"],
     "AI／半導體": [r"\bartificial intelligence\b",r"\bai\b",r"\bchip(s)?\b",r"\bsemiconductor(s)?\b",r"\bnvidia\b",r"\btsmc\b"],
 }
 
 def classify_category(item: RawItem) -> str:
     text=f"{item.title} {item.body}".lower()
-    if re.search(r"truth social|\btmtg\b|posting spree", text): return "社群訊號／TMTG"
+    if re.search(r"\btmtg\b|\bdjt\b|truth social (traffic|revenue|contract|subscription|business)|posting spree", text): return "社群訊號／TMTG"
     scores={cat:sum(1 for pattern in patterns if re.search(pattern,text)) for cat,patterns in KEYWORDS.items()}
     best,count=max(scores.items(),key=lambda kv:kv[1])
     return best if count>0 else "其他／一般政治"

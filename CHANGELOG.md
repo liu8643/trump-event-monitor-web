@@ -1,10 +1,3 @@
-## 2.3.6
-- Corrected rendered Truth Social Cloudflare verification pages: they are now reported as `RENDERED_ACCESS_DENIED_CLOUDFLARE_CHALLENGE`, not `RENDERED_NO_POSTS`.
-- Corrected `truth_social_status`: ACCESS_DENIED and other degraded states are now `OFFICIAL_TIMELINE_UNAVAILABLE:<reason>`, never `OFFICIAL_TIMELINE_NO_POSTS`.
-- Added regression tests for rendered Cloudflare classification and Truth status semantics.
-- Rebuilt Excel `09_來源健康` so it matches the homepage nine-source dashboard, while retaining raw engineering statuses and the four-layer Truth evidence table.
-- Preserved the four-layer evidence gate and all existing sources/exports.
-
 ## 2.3.5
 - 修正 Playwright 只有套件但缺 Chromium 執行檔：新增 packages.txt、系統 Chromium 偵測與 GitHub Workflow 安裝。
 - Static HTML 遇到 Cloudflare challenge 改為精簡紀錄，不再把整段 challenge script 寫入報表。
@@ -80,3 +73,12 @@
 - Fixed app/streamlit_app.py remaining at V2.2.2 and missing the homepage source-health dashboard.
 - Restored dynamic Truth Official status and Source Settings health table.
 - Removed generated caches/output and restored .gitignore/.env.example.
+
+## 2.3.7 — V2.3.5 baseline corrective release
+- Based strictly on V2.3.5 source package; does not reuse the prior separately-produced V2.4.0 package.
+- Activates existing event clustering module in the production engine instead of category-wide aggregation.
+- Adds deterministic security and healthcare/social-policy guardrails to prevent CHIP/Medicaid false semiconductor classification and secret-flight category splits.
+- Adds 0–100 materiality gate (BLACK/RED/ORANGE/YELLOW/WATCH) and explicit `is_material` marker.
+- Fixes AP News publisher alias in source-health counts.
+- Adds persistent rotating runtime/debug/error logs and downloadable Debug Log ZIP in Streamlit UI.
+- Fixes date-dependent SAMPLE repository regression test by pinning the intended sample evaluation time.

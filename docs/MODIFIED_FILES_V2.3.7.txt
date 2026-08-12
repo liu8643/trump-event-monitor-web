@@ -1,0 +1,16 @@
+V2.3.7 modified from V2.3.5 baseline
+- src/trump_monitor/engine.py
+- src/trump_monitor/clustering.py (activated by engine; logic retained)
+- src/trump_monitor/classifier.py
+- src/trump_monitor/ai_service.py
+- src/trump_monitor/materiality.py (new)
+- src/trump_monitor/logging_utils.py (new)
+- src/trump_monitor/models.py
+- src/trump_monitor/source_health.py
+- src/trump_monitor/exporters/excel_exporter.py
+- app/streamlit_app.py
+- scripts/scheduled_run.py
+- tests/test_v2_features.py
+- tests/test_v237_engine_quality.py (new)
+- pyproject.toml
+- CHANGELOG.md

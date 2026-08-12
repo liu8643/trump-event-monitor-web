@@ -20,6 +20,6 @@ def test_repository_detail_queries(tmp_path):
     from trump_monitor.engine import TrumpEventEngine
     from trump_monitor.collectors.sample import SampleAdapter
     from pathlib import Path
-    r=TrumpEventEngine(AppConfig(mode='SAMPLE'),[SampleAdapter(Path(__file__).parents[1]/'data'/'sample_items.json')]).run()
+    r=TrumpEventEngine(AppConfig(mode='SAMPLE'),[SampleAdapter(Path(__file__).parents[1]/'data'/'sample_items.json')]).run(datetime(2026,7,28,0,0,tzinfo=timezone.utc))
     repo=EventRepository(tmp_path/'events.sqlite3'); repo.save_run(r)
     assert repo.list_events(r.run_id) and repo.list_sources(r.run_id) and repo.list_impacts(r.run_id)

@@ -1,0 +1,14 @@
+V2.3.7 validation (strictly based on V2.3.5 source baseline)
+- Baseline V2.3.5 re-run on 2026-08-12: 32 passed / 1 failed (date-dependent SAMPLE repository test)
+- Modified V2.3.7 pytest: ........................................                                 [100%]
+- compileall: PASS
+- smoke_test: SMOKE SAMPLE PASS: TRUMP-RUN-20260728-080000, events=6, status=SUCCESS, artifacts=7
+- Debug logging: runtime.log/debug.log/error.log configured; ZIP bundle creation PASS
+- AP News alias source-health regression: PASS
+- Medicaid CHIP false AI/semiconductor classification regression: PASS
+- Truth Social channel-name topic hijack regression: PASS
+- Same-category unrelated event separation regression: PASS
+- Base source: 川普72小時事件監控_GitHubWeb_Release_V2.3.5_四層來源驗收修正版_20260730(2).zip
+- Prior separately-produced V2.4.0 package: NOT USED AS SOURCE
+
+- Exact pytest count: 40 passed / 0 failed

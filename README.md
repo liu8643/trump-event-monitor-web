@@ -35,3 +35,13 @@ Truth full text requires licensed API or manual import. Search-index data remain
 
 ## V2.2.2 CNBC來源說明
 原CNBC新聞並非獨立Collector，而是由Google News RSS的Publisher欄位間接取得。V2.2.2新增`CnbcNewsAdapter`，仍使用無金鑰Google News RSS，但將CNBC限定查詢、執行狀態與筆數獨立化；一般Google News RSS及所有原來源均保留，重複資料由既有去重流程處理。
+
+## V2.3.7（基於 V2.3.5）工程修正
+
+- 正式主引擎啟用 `clustering.py`，事件依語意聚類，不再把整個分類桶誤當同一事件。
+- 新增 0–100 `materiality_score` 與 BLACK/RED/ORANGE/YELLOW/WATCH 等級；`is_material` 門檻預設 65。
+- 新增「總統安全／國安」與「醫療／社會政策」分類護欄，避免 Secret Flight 類事件跨類別拆分，以及 Medicaid `CHIP` 被誤判成半導體 chip。
+- `Truth Social` 僅在 TMTG/DJT 公司/平台業務語意時分類為社群/TMTG；一般第一手貼文按事件內容分類。
+- AP News / Associated Press publisher alias 納入來源健康統計。
+- `output/logs/` 保存 `runtime.log`、`debug.log`、`error.log`，Streamlit「系統Log」及「報表中心」均可下載 Debug Log ZIP。
+- SAMPLE 測試固定評估時間，避免固定樣本因執行日期漂移導致 72 小時窗假失敗。

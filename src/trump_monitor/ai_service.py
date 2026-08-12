@@ -13,16 +13,18 @@ class AIAnalysis:
     summary_status: str
 
 KEYWORDS={
+    "總統安全／國安": [r"\bsecret service\b",r"\bair force one\b",r"\bsecret flight\b",r"\bassassinat",r"\bsecurity threat\b",r"\bthreats? against trump\b"],
+    "醫療／社會政策": [r"\bmedicaid\b",r"\bvaccine(s)?\b",r"\bmmr\b",r"gender[- ]affirming",r"transgender",r"\bhealth care\b",r"\bhealthcare\b"],
  "關稅／國際貿易":[r"\btariff(s)?\b",r"\btrade\b",r"\bcustoms\b",r"\bdut(y|ies)\b"],
  "地緣政治／能源":[r"\biran\b",r"\bisrael\b",r"\bwar\b",r"\boil\b",r"\bstrait\b",r"\bmilitary\b"],
  "AI／半導體":[r"\bartificial intelligence\b",r"\bai\b",r"\bchip(s)?\b",r"\bsemiconductor(s)?\b",r"\bnvidia\b"],
  "美國政治／選舉制度":[r"\bsenate\b",r"\belection\b",r"\bvot(e|ing)\b",r"\bcongress\b",r"\bballot\b",r"\bsupreme court\b",r"\bnominee\b"],
- "社群訊號／TMTG":[r"truth social",r"\btmtg\b",r"\bdjt\b"],
+ "社群訊號／TMTG":[r"\btmtg\b",r"\bdjt\b",r"truth social (traffic|revenue|contract|subscription|business)"],
 }
 
 def heuristic_analyze(title:str,body:str)->AIAnalysis:
     text=(title+" "+body).lower()
-    if re.search(r"truth social|\btmtg\b|posting spree",text):
+    if re.search(r"\btmtg\b|\bdjt\b|truth social (traffic|revenue|contract|subscription|business)|posting spree",text):
         category="社群訊號／TMTG"; best=99
     else:
         category="其他／一般政治"; best=0

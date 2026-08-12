@@ -7,7 +7,6 @@ from openpyxl.chart import BarChart, Reference
 from openpyxl.utils import get_column_letter
 
 from trump_monitor.models import RunResult
-from trump_monitor.source_health import build_source_health
 
 TITLE_FILL = PatternFill("solid", fgColor="17365D")
 HEADER_FILL = PatternFill("solid", fgColor="1F4E78")
@@ -52,17 +51,17 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     wb = Workbook()
     ws = wb.active
     ws.title = "01_三日重大摘要"
-    _style_title(ws, 18, "川普最近三天新聞與市場影響｜正式程式輸出")
-    ws.merge_cells("A2:R2")
+    _style_title(ws, 21, "川普最近三天新聞與市場影響｜真正重大事件專業情報輸出")
+    ws.merge_cells("A2:U2")
     ws["A2"] = f"Run ID：{result.run_id}｜Rule：{result.rule_version}｜Prompt：{result.prompt_version}｜Schema：{result.schema_version}｜Status：{result.status}｜Data Mode：{result.data_mode}｜Truth Social：{result.truth_social_status}"
     ws["A2"].fill = NOTE_FILL; ws["A2"].alignment = Alignment(wrap_text=True)
-    ws.append([]); ws.append(["重大事件數", len(result.events), "資料來源", ", ".join(result.source_status), "警告數", len(result.warnings)])
-    headers = ["排名","事件ID","事件日期","最新更新時間","重要度","事件分數","主題","類別","摘要重點","消息來源數","可信度","美股分數","台股分數","原油分數","黃金分數","受惠方向","受壓方向","GTC建議"]
+    ws.append([]); ws.append(["事件總數", len(result.events), "真正重大事件數", sum(e.is_material for e in result.events), "資料來源", ", ".join(result.source_status), "警告數", len(result.warnings)])
+    headers = ["排名","事件ID","事件日期","最新更新時間","重要度","事件分數","重大性分數","重大性等級","真正重大","主題","類別","摘要重點","消息來源數","可信度","美股分數","台股分數","原油分數","黃金分數","受惠方向","受壓方向","GTC建議"]
     _header(ws, 8, headers)
     for rank, e in enumerate(result.events, 1):
         impact = {x.asset: x.final_score for x in e.impacts}
-        ws.append([rank,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),"★"*e.score.importance,e.score.rule_score,e.topic,e.category,e.summary,e.source_count,e.score.confidence,impact.get("美股",0),impact.get("台股",0),impact.get("原油",0),impact.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action])
-    _body(ws,9,8+len(result.events),18); _widths(ws,{1:7,2:24,3:14,4:20,5:12,6:11,7:32,8:20,9:50,10:12,11:12,12:11,13:11,14:11,15:11,16:30,17:30,18:13})
+        ws.append([rank,e.event_id,e.first_seen.date().isoformat(),e.last_seen.isoformat(),"★"*e.score.importance,e.score.rule_score,e.materiality_score,e.materiality_level,"是" if e.is_material else "否",e.topic,e.category,e.summary,e.source_count,e.score.confidence,impact.get("美股",0),impact.get("台股",0),impact.get("原油",0),impact.get("黃金",0),"、".join(e.beneficiary_sectors),"、".join(e.negative_sectors),e.battle_action])
+    _body(ws,9,8+len(result.events),21); _widths(ws,{1:7,2:24,3:14,4:20,5:12,6:11,7:13,8:13,9:12,10:32,11:20,12:50,13:12,14:12,15:11,16:11,17:11,18:11,19:30,20:30,21:13})
     ws.freeze_panes = "A9"
 
     ws2 = wb.create_sheet("02_新聞明細")
@@ -150,29 +149,8 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     _body(ws8,4,11,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
 
     ws9 = wb.create_sheet("09_來源健康")
-    _style_title(ws9,8,"來源健康儀表板｜九大來源與Truth Official四層證據")
-    _header(ws9,3,["來源","筆數","狀態","覆蓋率","角色","詳細狀態","來源鍵","備註"])
-    health_rows=build_source_health(result)
-    for row in health_rows:
-        key=row["source_key"]
-        note=""
-        if key=="cnbc":
-            note="CNBC獨立來源狀態與筆數。"
-        elif key.startswith("publisher:"):
-            note="由事件證據publisher_group依raw_item_id去重統計。"
-        warning_detail="；".join(w for w in result.warnings if w.startswith(f"{key}:"))
-        if warning_detail:
-            note=(note+"；" if note else "")+warning_detail
-        ws9.append([row["來源"],row["筆數"],row["狀態"],row["覆蓋率"],row["角色"],row["詳細狀態"],key,note])
-    _body(ws9,4,3+len(health_rows),8)
-    _widths(ws9,{1:24,2:12,3:16,4:14,5:30,6:42,7:30,8:62})
-    ws9.freeze_panes="A4"
-
-    raw_start=6+len(health_rows)
-    ws9.cell(raw_start,1,"來源原始執行狀態（工程查核）")
-    ws9.cell(raw_start,1).font=Font(bold=True,size=13,color="1F4E78")
-    raw_headers=["來源鍵","狀態","筆數","來源定位","是否獨立執行","備註"]
-    _header(ws9,raw_start+1,raw_headers)
+    _style_title(ws9,6,"來源執行狀態與筆數｜CNBC獨立可追溯")
+    _header(ws9,3,["來源鍵","狀態","筆數","來源定位","是否獨立執行","備註"])
     labels={
       "truth_official_timeline":"Truth Social Official Timeline",
       "truth_official_api":"Truth Social Licensed API",
@@ -187,24 +165,26 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     for key in all_keys:
         status=result.source_status.get(key,"NOT_CONFIGURED")
         count=result.source_counts.get(key,0)
+        role="財經媒體驗證" if key=="cnbc" else "來源蒐集／補充"
         independent="是" if key in result.source_status else "否"
         warning_detail="；".join(w for w in result.warnings if w.startswith(f"{key}:"))
         note="原CNBC資料曾包含在google_news_rss內；V2.2.2新增獨立狀態與筆數。" if key=="cnbc" else ""
         if warning_detail:
             note=(note+"；" if note else "")+warning_detail
         ws9.append([key,status,count,labels.get(key,key),independent,note])
-    _body(ws9,raw_start+2,raw_start+1+len(all_keys),6)
+    _body(ws9,4,3+len(all_keys),6); _widths(ws9,{1:28,2:24,3:12,4:44,5:18,6:65}); ws9.freeze_panes="A4"
 
     if result.source_observations:
-        start_row=raw_start+4+len(all_keys)
+        start_row=6+len(all_keys)
         ws9.cell(start_row,1,"Truth Official 四層取得與人工查閱紀錄")
         ws9.cell(start_row,1).font=Font(bold=True,size=13,color="1F4E78")
         headers=["層級","狀態","顯示/回傳內容","備註","可進事件引擎","證據品質","官方網址","觀察時間"]
+        for col,val in enumerate(headers,1): ws9.cell(start_row+1,col,val)
         _header(ws9,start_row+1,headers)
         for obs in result.source_observations:
             ws9.append([obs.layer,obs.status,obs.displayed_text,obs.note,"是" if obs.eligible_for_event_engine else "否",obs.evidence_quality,obs.url,obs.observed_at.isoformat()])
         _body(ws9,start_row+2,start_row+1+len(result.source_observations),8)
-        _widths(ws9,{1:26,2:42,3:58,4:62,5:18,6:22,7:65,8:28})
+        _widths(ws9,{1:26,2:34,3:58,4:62,5:18,6:22,7:65,8:28})
 
     tmp = out.with_suffix(out.suffix + ".tmp")
     wb.save(tmp)

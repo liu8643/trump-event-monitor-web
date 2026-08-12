@@ -30,13 +30,14 @@ from trump_monitor.watchlist import update_watchlist
 from trump_monitor.source_health import build_source_health, source_health_summary
 from trump_monitor.exporters.docx_exporter import export_docx
 from trump_monitor.exporters.pdf_exporter import export_pdf
+from trump_monitor.logging_utils import configure_logging, build_debug_bundle
 try:
     from streamlit_autorefresh import st_autorefresh
 except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.3.6"
+APP_VERSION = "2.3.7"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -46,6 +47,7 @@ DATA_PATH = ROOT / "data" / "sample_items.json"
 OUTPUT = ROOT / config.output_dir
 DB_PATH = OUTPUT / "trump_events.sqlite3"
 RUNTIME_TRUTH_PATH = OUTPUT / "truth_manual_posts_runtime.json"
+LOGGER = configure_logging(OUTPUT)
 
 @st.cache_resource
 def repository() -> EventRepository:
@@ -112,7 +114,7 @@ def get_result():
 
 with st.sidebar:
     st.title("📡 Trump News Center")
-    st.caption(f"正式版本 v{APP_VERSION}｜修復首頁來源健康儀表板部署落差；原有來源與功能保留")
+    st.caption(f"正式版本 v{APP_VERSION}｜V2.3.5基線修正版：事件聚類、重大性Gate、分類防誤判、Debug Log可下載")
     page = st.radio("功能", [
         "首頁總覽","事件中心","事件分析","新聞明細","Truth貼文","市場影響","台股候選","GTC預覽","報表中心","歷史執行","來源設定","系統Log"
     ])
@@ -150,8 +152,8 @@ if page == "首頁總覽":
         st.info("請由左側按下「開始／重新分析」。")
     else:
         c1,c2,c3,c4 = st.columns(4)
-        c1.metric("事件數", len(result.events))
-        c2.metric("高影響事件", sum(e.score.importance >= 4 for e in result.events))
+        c1.metric("事件總數", len(result.events))
+        c2.metric("真正重大事件", sum(e.is_material for e in result.events))
         c3.metric("警告數", len(result.warnings))
         c4.metric("來源狀態", result.status)
         if result.status in {"DATA_UNAVAILABLE", "SOURCE_FAILED"}:
@@ -325,6 +327,8 @@ elif page == "報表中心":
         if len(watch_paths)>=2:
             c6.download_button("下載 GTC WatchList JSON",watch_paths[0].read_bytes(),watch_paths[0].name,"application/json",width="stretch")
             st.download_button("下載 GTC WatchList CSV",watch_paths[1].read_bytes(),watch_paths[1].name,"text/csv",width="stretch")
+        debug_zip=build_debug_bundle(OUTPUT,result.run_id)
+        st.download_button("下載 Debug Log ZIP",debug_zip.read_bytes(),debug_zip.name,"application/zip",width="stretch")
         st.caption("GTC WatchList 為 REVIEW_REQUIRED；不會未經確認直接改寫既有 GTC 資料庫。")
 
 elif page == "歷史執行":
@@ -370,8 +374,15 @@ elif page == "來源設定":
     st.info("正式來源失敗時會明確顯示FAILED／RATE_LIMIT／LOGIN_REQUIRED等原因，不會以Sample替代。")
 
 elif page == "系統Log":
-    st.header("系統 Log")
+    st.header("系統 Log / Debug Evidence")
     result=get_result()
-    if not result: st.info("尚無分析結果。")
+    if not result: st.info("尚無分析結果；runtime/debug/error log 仍會保存在 output/logs。")
     else:
         st.json({"run_id":result.run_id,"status":result.status,"data_mode":result.data_mode,"truth_social_status":result.truth_social_status,"source_status":result.source_status,"warnings":result.warnings,"versions":{"rule":result.rule_version,"prompt":result.prompt_version,"model":result.model_version,"schema":result.schema_version}})
+    log_dir=OUTPUT/"logs"
+    for filename in ["runtime.log","debug.log","error.log"]:
+        path=log_dir/filename
+        if path.exists():
+            st.download_button(f"下載 {filename}",path.read_bytes(),filename,"text/plain",width="stretch")
+    bundle=build_debug_bundle(OUTPUT,result.run_id if result else "")
+    st.download_button("下載完整 Debug Log ZIP",bundle.read_bytes(),bundle.name,"application/zip",width="stretch")

@@ -83,6 +83,9 @@ class EventCluster(BaseModel):
     data_freshness: str = "CURRENT"
     primary_source_present: bool = False
     verification_source_count: int = 0
+    materiality_score: int = Field(ge=0, le=100, default=0)
+    materiality_level: str = "WATCH"
+    is_material: bool = False
     taiwan_candidates: list[dict] = Field(default_factory=list)
 
 

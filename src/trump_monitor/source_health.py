@@ -28,7 +28,7 @@ def _publisher_counts(result: RunResult) -> dict[str, int]:
                 continue
             if "reuters" in name:
                 seen["reuters"].add(item.raw_item_id)
-            if name in {"ap", "associated press"} or "associated press" in name:
+            if name in {"ap", "ap news", "associated press"} or "associated press" in name:
                 seen["ap"].add(item.raw_item_id)
             if "bloomberg" in name:
                 seen["bloomberg"].add(item.raw_item_id)
