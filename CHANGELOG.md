@@ -1,3 +1,12 @@
+
+## 2.3.11 - 2026-08-25
+- Three-round live evidence review from TRUMP-RUN-20260824-182701.
+- Translation resilience: persistent success cache, conservative concurrency, retry/backoff, detailed failure status, publisher-name preservation.
+- Added White House Official direct collector and GDELT DOC no-key direct-link collector.
+- Scheduled runner now includes the same optional GNews/NewsAPI paths as Streamlit UI.
+- Dedup preserves cross-publisher corroboration and prefers direct evidence URLs within the same publisher.
+- Source health separates publisher coverage from acquisition channel.
+- Cloudflare rendered challenge no longer reported as NO_POSTS.
 # V2.3.8 (2026-08-12) — Live Evidence Corrective Release
 
 - Based strictly on the deployed V2.3.7 source and the 2026-08-12 17:44 live run evidence.

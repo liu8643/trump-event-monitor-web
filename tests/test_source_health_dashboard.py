@@ -59,7 +59,7 @@ def _result() -> RunResult:
 def test_source_health_contains_all_homepage_sources_and_counts():
     rows = build_source_health(_result())
     by_name = {row["來源"]: row for row in rows}
-    assert list(by_name) == ["Truth Official", "Truth Search", "Reuters", "AP", "Bloomberg", "CNBC", "Google RSS", "NewsAPI", "GNews"]
+    assert list(by_name) == ["Truth Official", "White House Official", "Truth Search", "Reuters", "AP", "Bloomberg", "CNBC", "Google RSS", "GDELT", "NewsAPI", "GNews"]
     assert by_name["CNBC"]["筆數"] == 3
     assert by_name["Reuters"]["筆數"] == 1
     assert by_name["AP"]["筆數"] == 1
@@ -77,7 +77,7 @@ def test_source_health_distinguishes_failed_no_data_and_not_configured():
     summary = source_health_summary(rows)
     assert summary["success"] == 6
     assert summary["failed"] == 1
-    assert summary["not_configured"] == 2
+    assert summary["not_configured"] == 4
 
 
 def test_source_health_summary_counts_partial():

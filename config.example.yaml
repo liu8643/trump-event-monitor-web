@@ -20,6 +20,14 @@ sources:
     api_base_url: "" # Licensed Truth API endpoint when contracted
     manual_import_path: "data/truth_manual_posts.json"
     search_index_enabled: true
+  whitehouse_official:
+    enabled: true
+    priority: 1
+    timeout_seconds: 15
+  gdelt:
+    enabled: true
+    priority: 3
+    timeout_seconds: 20
   verification_media:
     publishers: ["Reuters", "Associated Press", "Bloomberg"]
     priority: 2

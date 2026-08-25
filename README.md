@@ -1,3 +1,14 @@
+## V2.3.11 三輪交互分析修正版（基於使用者指定 V2.3.9）
+
+- 2026-08-24 Live report 顯示 86 個事件僅 10 個有繁中（11.6%）；大量 `TITLE:FAILED:HTTPError`。根因是免Key Google Web翻譯以 8 workers burst 呼叫、失敗結果還會被記憶體快取。新版改為成功才快取、磁碟持久cache、2 workers、節流、429/5xx retry/backoff、CJK有效性檢查。
+- 翻譯前移除 ` - Publisher` 尾碼，翻譯後原樣接回 Publisher，避免來源名稱被翻譯層改寫。
+- 新增 White House Official first-party direct URL collector 與免Key GDELT DOC 2.0 direct-publisher URL collector，降低對 Google News RSS 單一聚合通道的依賴。
+- GitHub `scheduled_run.py` 現在與 Streamlit UI 同步支援 GDELT、White House，以及有 Key 時的 GNews/NewsAPI；修正排程版永遠不會執行 GNews/NewsAPI 的落差。
+- `verification_media` 不再被誤解為獨立 Reuters/AP/Bloomberg adapter：來源健康頁明確分離「Publisher 身分」與「Acquisition Channel」。
+- 去重邏輯改為：跨 Publisher 的近似標題保留作獨立交叉驗證；同 Publisher 重複時優先保留 direct URL / first-party 證據，避免 Google redirect 把 GDELT/官方直連覆蓋。
+- Truth rendered page 若是 Cloudflare security verification，標記 `ACCESS_DENIED_CLOUDFLARE_CHALLENGE`，不再誤寫 `RENDERED_NO_POSTS`。
+- Debug Log ZIP 功能保留：`runtime.log / debug.log / error.log`。
+
 
 ## V2.3 首頁來源健康儀表板
 
