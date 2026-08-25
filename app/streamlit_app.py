@@ -41,7 +41,7 @@ except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.3.16"
+APP_VERSION = "2.3.17"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -126,7 +126,7 @@ def get_result():
 
 with st.sidebar:
     st.title("📡 Trump News Center")
-    st.caption(f"正式版本 v{APP_VERSION}｜三輪交互修正版：翻譯三層Failover＋官方直連擴充＋事件證據保真＋Debug Log")
+    st.caption(f"正式版本 v{APP_VERSION}｜三輪交互修正版：翻譯離線保底＋GDELT降級修正＋官方直連＋Debug Log")
     page = st.radio("功能", [
         "首頁總覽","事件中心","事件分析","新聞明細","Truth貼文","市場影響","台股候選","GTC預覽","報表中心","歷史執行","來源設定","系統Log"
     ])

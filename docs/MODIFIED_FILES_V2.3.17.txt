@@ -1,0 +1,15 @@
+V2.3.17 modified/added files
+
+src/trump_monitor/translation.py
+src/trump_monitor/collectors/gdelt.py
+src/trump_monitor/exporters/excel_exporter.py
+src/trump_monitor/engine.py
+src/trump_monitor/collectors/federal_register.py
+src/trump_monitor/collectors/treasury.py
+app/streamlit_app.py
+pyproject.toml
+README.md
+CHANGELOG.md
+tests/test_v2317_live_regressions.py
+docs/MODIFIED_FILES_V2.3.17.txt
+docs/TEST_RESULTS_V2.3.17.txt

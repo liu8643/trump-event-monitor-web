@@ -19,7 +19,7 @@ class TreasuryOfficialAdapter(SourceAdapter):
     def __init__(self, timeout:int=10): self.timeout=timeout
     def collect(self,start:datetime,end:datetime)->list[RawItem]:
         try:
-            r=requests.get(self.listing,timeout=self.timeout,headers={"User-Agent":"TrumpEventMonitor/2.3.16"}); r.raise_for_status()
+            r=requests.get(self.listing,timeout=self.timeout,headers={"User-Agent":"TrumpEventMonitor/2.3.17"}); r.raise_for_status()
             doc=lxml_html.fromstring(r.content)
         except Exception as exc:
             raise SourceError(f"Treasury 取得失敗: {type(exc).__name__}") from exc

@@ -1,3 +1,9 @@
+
+## V2.3.17 — 2026-08-25 14:01 Live root-cause fix
+- 14:01 Production Run showed 108/108 network translations failed even after Google→MyMemory→Lingva. Adds `LOCAL_RULE_ZH_TW` as a deterministic offline Traditional-Chinese reading layer so the Chinese column no longer collapses to blank when all public providers are throttled. It is explicitly labeled `SUCCESS:LOCAL_RULE_PARTIAL`; English remains authoritative evidence.
+- Translation reporting now distinguishes full/network translation from `LOCAL_PARTIAL` quality instead of treating every nonblank Chinese string as equivalent.
+- GDELT ReadTimeout/transport failures now open the persisted degraded-source circuit and return cache/degraded state instead of throwing `SourceError` traceback on every run.
+- Retains V2.3.16 Federal Register, U.S. Treasury, lightweight Truth Rendered disablement, clustering and Materiality fixes.
 ## 2.3.15 - 2026-08-25
 - 依 11:51 Live Run（TRUMP-RUN-20260825-115155）做三輪交互分析。
 - 翻譯：確認 Google 429 Circuit → MyMemory fallback 103/103 成功；新增 Taiwan terminology normalization（特朗普→川普），修正 runtime log 的 primary/effective provider 語意。

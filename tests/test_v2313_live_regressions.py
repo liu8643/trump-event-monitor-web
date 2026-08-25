@@ -60,7 +60,8 @@ def test_google_circuit_skips_minutes_of_retries(monkeypatch,tmp_path):
     monkeypatch.setattr(tr.requests,"get",lambda *a,**k:(calls.__setitem__("n",calls["n"]+1) or Resp()))
     out=tr.translate_many([f"Headline {i}" for i in range(20)])
     assert calls["n"]==1
-    assert all(not x.text_zh for x in out.values())
+    assert all(x.text_zh for x in out.values())
+    assert all(x.provider=="LOCAL_RULE_ZH_TW" for x in out.values())
 
 
 def test_gdelt_http200_plaintext_rate_limit_retries_then_succeeds(monkeypatch,tmp_path):

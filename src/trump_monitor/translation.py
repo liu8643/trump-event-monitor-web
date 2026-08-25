@@ -77,7 +77,7 @@ def _provider() -> str:
 def _fallback_providers() -> list[str]:
     """Ordered public fallbacks.
 
-    V2.3.16 allows a second no-key provider after MyMemory so one public-service
+    V2.3.17 retains a second no-key provider after MyMemory so one public-service
     quota does not erase all Chinese output.  Values are always evidence-labeled.
     """
     raw = os.getenv("TRANSLATION_FALLBACK_PROVIDER", "MYMEMORY,LINGVA").strip().upper()
@@ -209,7 +209,7 @@ def _translate_google_web(text: str) -> TranslationResult:
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.16"})
+                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.17"})
                 status_code = int(getattr(r, "status_code", 200))
                 if status_code == 429:
                     _mark_google_blocked()
@@ -258,7 +258,7 @@ def _translate_google_web_batch(texts: list[str]) -> dict[str, TranslationResult
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.16"})
+                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.17"})
                 code = int(getattr(r, "status_code", 200))
                 if code == 429:
                     _mark_google_blocked()
@@ -344,7 +344,7 @@ def _translate_mymemory_batch(texts: list[str]) -> dict[str, TranslationResult]:
         params["de"] = email
     try:
         _throttle("TRANSLATION_MYMEMORY_RATE_LIMIT_SECONDS", "0.8")
-        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.16"})
+        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.17"})
         code = int(getattr(r, "status_code", 200))
         if code == 429:
             _mark_mymemory_blocked()
@@ -408,7 +408,7 @@ def _translate_lingva_batch(texts: list[str]) -> dict[str, TranslationResult]:
         try:
             _throttle("TRANSLATION_LINGVA_RATE_LIMIT_SECONDS", "0.7")
             url=f"{base}/api/v1/en/zh/{quote(joined, safe='')}"
-            r=requests.get(url, timeout=timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.16"})
+            r=requests.get(url, timeout=timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.17"})
             code=int(getattr(r,"status_code",200))
             if code==429:
                 last="FAILED:HTTP_429"
@@ -490,6 +490,75 @@ def _fallback_pending(texts: list[str], results: dict[str, TranslationResult]) -
                     break
         remaining=list(dict.fromkeys(next_remaining))
 
+
+def _translate_local_rule(text: str) -> TranslationResult:
+    """Guaranteed offline Traditional-Chinese safety net for public-news headlines.
+
+    This is deliberately labeled PARTIAL: it is a deterministic Chinese event
+    rendering, not a machine-translation claim.  It exists so the UI never loses
+    the Chinese reading layer when every public translation provider is throttled.
+    English evidence remains authoritative and unchanged.
+    """
+    src=" ".join((text or "").split()).strip()
+    if not src:
+        return TranslationResult("", "LOCAL_RULE_ZH_TW", "EMPTY_INPUT")
+    low=src.lower()
+    # High-frequency policy/event templates observed in this system.
+    patterns=[
+        (r"supreme court.*(?:mail|vote-by-mail|mail-in|ballot)", "美國最高法院允許川普政府推進郵寄投票限制措施"),
+        (r"(?:canada|canadian).*(?:car|cars|truck|trucks|auto|vehicle).*(?:tariff|tariffs).*(?:50%|50 percent)", "川普宣布／威脅將加拿大汽車與卡車關稅提高至50%"),
+        (r"(?:canada|canadian).*(?:50%|50 percent).*(?:tariff|tariffs).*(?:car|cars|truck|trucks|auto|vehicle)", "川普宣布／威脅將加拿大汽車與卡車關稅提高至50%"),
+        (r"(?:tariff|tariffs).*(?:canada|canadian).*(?:50%|50 percent).*(?:car|cars|truck|trucks|auto|vehicle)", "川普宣布／威脅將加拿大汽車與卡車關稅提高至50%"),
+        (r"(?:anti-iran|iran).*(?:sanction|sanctions)", "川普政府宣布針對伊朗的制裁措施／全球制裁計畫"),
+        (r"operation economic outcast", "美國政府推動針對伊朗的「經濟排斥行動」"),
+        (r"secret service.*iran.*(?:threat|threatening).*barron", "美國特勤局注意到伊朗媒體發布威脅巴倫・川普安全的內容"),
+        (r"approval.*(?:iran war|war).*poll|poll.*approval", "民調顯示川普支持度與美國民眾對伊朗戰爭支持出現變化"),
+        (r"h-?1b.*(?:fee|fees)", "川普政府推動H-1B簽證費用政策調整"),
+        (r"(?:immigration|deport|deported|border|asylum|visa|ice)", "川普政府移民／邊境政策相關事件"),
+        (r"federal register|temporary suspension of additional duties", "美國聯邦公報公布與關稅／附加稅調整相關的正式文件"),
+        (r"secretary of the treasury.*(?:iran|outcast)|treasury.*(?:iran|sanction)", "美國財政部公布與伊朗制裁／金融政策相關的官方訊息"),
+        (r"(?:tariff|tariffs|trade war)", "川普關稅／國際貿易政策相關事件"),
+        (r"(?:iran|hormuz|military|war|sanction)", "川普政府地緣政治／能源與國安相關事件"),
+        (r"(?:election|ballot|voting|vote|senate|congress|supreme court)", "川普政府美國政治／選舉制度相關事件"),
+        (r"(?:medicaid|vaccine|healthcare|health care)", "川普政府醫療／社會政策相關事件"),
+    ]
+    for pat,zh in patterns:
+        if re.search(pat, low):
+            return TranslationResult(zh, "LOCAL_RULE_ZH_TW", "SUCCESS:LOCAL_RULE_PARTIAL")
+
+    # Generic but transparent final safety net.  It provides a Chinese reading
+    # label without pretending the untranslated proper content is a full MT result.
+    cleaned=re.sub(r"\s+-\s+[^-]{2,80}$", "", src).strip()
+    # Replace only stable high-frequency terms, preserve names/numbers.
+    terms=[
+        (r"\bTrump(?:'s)?\b", "川普"), (r"\bU\.S\.\b|\bUS\b", "美國"),
+        (r"\bannounces?\b", "宣布"), (r"\bthreatens?\b", "威脅"),
+        (r"\bsays?\b", "表示"), (r"\badministration\b", "政府"),
+        (r"\btariffs?\b", "關稅"), (r"\bsanctions?\b", "制裁"),
+        (r"\bSupreme Court\b", "最高法院"), (r"\bCanada\b|\bCanadian\b", "加拿大"),
+        (r"\bIran\b|\bIranian\b", "伊朗"), (r"\bChina\b", "中國"),
+        (r"\belection\b", "選舉"), (r"\btrade war\b", "貿易戰"),
+    ]
+    mixed=cleaned
+    for pat,rep in terms:
+        mixed=re.sub(pat,rep,mixed,flags=re.I)
+    return TranslationResult("【規則式繁中摘要】"+mixed, "LOCAL_RULE_ZH_TW", "SUCCESS:LOCAL_RULE_PARTIAL")
+
+
+def _apply_local_rule_fallback(texts: list[str], results: dict[str, TranslationResult]) -> None:
+    """Fill only rows that still have no Chinese after all network providers."""
+    for text in texts:
+        current=results.get(text)
+        if current is not None and current.text_zh:
+            continue
+        local=_translate_local_rule(text)
+        if current is not None and current.status:
+            local=TranslationResult(local.text_zh, local.provider, f"{local.status};NETWORK:{current.provider}:{current.status}")
+        results[text]=local
+        # LOCAL_RULE_ZH_TW is intentionally not persisted/cached.  Each new run
+        # must retry the network/LLM providers so a transient outage can recover
+        # to a full translation instead of being permanently pinned to PARTIAL.
+
 def translate_text(text: str) -> TranslationResult:
     clean = " ".join((text or "").split()).strip()
     if not clean:
@@ -518,10 +587,16 @@ def translate_text(text: str) -> TranslationResult:
     except Exception as exc:
         logger.warning("translation failed | provider=%s | error=%s | text=%s", provider, type(exc).__name__, clean[:120])
         result = TranslationResult("", provider, f"FAILED:{type(exc).__name__}")
+    if not result.text_zh:
+        network_provider, network_status = result.provider, result.status
+        local = _translate_local_rule(clean)
+        result = TranslationResult(local.text_zh, local.provider, f"{local.status};NETWORK:{network_provider}:{network_status}")
+        logger.warning("translation network unavailable; local fallback used | network_provider=%s | network_status=%s | text=%s", network_provider, network_status, clean[:120])
     if result.text_zh and contains_cjk(result.text_zh):
-        with _CACHE_LOCK:
-            _CACHE[clean] = result
-        _persist_cache()
+        if result.provider != "LOCAL_RULE_ZH_TW":
+            with _CACHE_LOCK:
+                _CACHE[clean] = result
+            _persist_cache()
     else:
         logger.warning("translation unavailable | provider=%s | status=%s | text=%s", result.provider, result.status, clean[:120])
     return result
@@ -575,6 +650,12 @@ def translate_many(texts: Iterable[str], max_workers: int | None = None) -> dict
 
         if google_failed and _fallback_providers():
             _fallback_pending(list(dict.fromkeys(google_failed)), results)
+        # V2.3.17: if every public provider is throttled/unavailable, keep the
+        # bilingual UI usable with a clearly-labeled offline partial Chinese layer.
+        still_missing=[t for t in dict.fromkeys(google_failed) if not results.get(t) or not results[t].text_zh]
+        if still_missing:
+            logger.warning("translation public providers exhausted; local fallback | rows=%d", len(still_missing))
+        _apply_local_rule_fallback(still_missing, results)
         _persist_cache()
     elif provider == "MYMEMORY":
         for pack in _pack_texts(pending, max(1, min(4, int(os.getenv("TRANSLATION_MYMEMORY_BATCH_SIZE", "3")))), max(180, int(os.getenv("TRANSLATION_MYMEMORY_MAX_CHARS", "420")))):
@@ -586,6 +667,7 @@ def translate_many(texts: Iterable[str], max_workers: int | None = None) -> dict
                         _CACHE[text] = result
             if _mymemory_circuit_open():
                 break
+        _apply_local_rule_fallback(pending, results)
         _persist_cache()
     else:
         workers = max(1, int(max_workers or os.getenv("TRANSLATION_MAX_WORKERS", "2")))
@@ -598,6 +680,10 @@ def translate_many(texts: Iterable[str], max_workers: int | None = None) -> dict
                     results[text] = future.result()
                 except Exception as exc:
                     results[text] = TranslationResult("", provider, f"FAILED:{type(exc).__name__}")
+
+    # Guaranteed final offline safety net only when translation is enabled.
+    if _enabled() and provider != "OFF":
+        _apply_local_rule_fallback(unique, results)
 
     # Ensure every requested string has an explicit result even if a fallback circuit opened mid-run.
     for text in unique:

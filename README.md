@@ -1,3 +1,9 @@
+
+## V2.3.17 — 2026-08-25 14:01 Live root-cause fix
+- 14:01 Production Run showed 108/108 network translations failed even after Google→MyMemory→Lingva. Adds `LOCAL_RULE_ZH_TW` as a deterministic offline Traditional-Chinese reading layer so the Chinese column no longer collapses to blank when all public providers are throttled. It is explicitly labeled `SUCCESS:LOCAL_RULE_PARTIAL`; English remains authoritative evidence.
+- Translation reporting now distinguishes full/network translation from `LOCAL_PARTIAL` quality instead of treating every nonblank Chinese string as equivalent.
+- GDELT ReadTimeout/transport failures now open the persisted degraded-source circuit and return cache/degraded state instead of throwing `SourceError` traceback on every run.
+- Retains V2.3.16 Federal Register, U.S. Treasury, lightweight Truth Rendered disablement, clustering and Materiality fixes.
 ## V2.3.15 11:51 Live Evidence 修正版
 
 本版直接依 `TRUMP-RUN-20260825-115155` 的 Live Excel + UI CSV + Debug ZIP 進行三輪交互分析。V2.3.14 已證明翻譯 Circuit Fallback 成功：103/103 標題由 `MYMEMORY_PUBLIC` 取得繁中，翻譯耗時約 29.4 秒；本版保留該能力並新增台灣用語正規化（`特朗普` → `川普`）。新發現的主要瓶頸是 GDELT：公開端點仍回 HTTP 429，單一 Adapter 讓 Live Run 額外耗時約 52 秒。因此 V2.3.15 將公開 rate limit 視為可預期的 degraded state，預設單次嘗試後開啟持久化 30 分鐘 Circuit，後續 Run 直接使用時間窗內 Cache 或快速標示 `DEGRADED:CIRCUIT_OPEN_NO_CACHE`，不再每五分鐘重複產生 Error traceback 與長時間等待。

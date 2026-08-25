@@ -1,0 +1,26 @@
+V2.3.17 verification
+
+Baseline evidence
+- Production Run: TRUMP-RUN-20260825-140109
+- Raw 110 -> unique 108 -> clusters 72 -> material 5
+- Network translation: requested 108 / success 0 / failed 108
+- GDELT: ReadTimeout (8s) raised SourceError and traceback
+- Federal Register: SUCCESS 3
+- U.S. Treasury: SUCCESS 6
+
+Post-fix regression
+- pytest: 81 passed / 0 failed
+- coverage: 80%
+- compileall src/app/scripts/tests: PASS
+- SAMPLE smoke: PASS; events=6; status=SUCCESS; artifacts=7
+- all public translation providers unavailable -> LOCAL_RULE_ZH_TW: PASS
+- LOCAL_RULE_ZH_TW is not persisted/cache-pinned; later provider recovery can upgrade to full translation: PASS
+- Canada 50% auto tariff local Chinese template: PASS
+- Supreme Court mail-vote local Chinese template: PASS
+- Iran sanctions local Chinese template: PASS
+- GDELT ReadTimeout -> DEGRADED persisted circuit instead of SourceError traceback: PASS
+
+Validation boundary
+- Public Google/MyMemory/Lingva remain best-effort and are not claimed as Production-Live successful in the build sandbox.
+- LOCAL_RULE_ZH_TW is explicitly PARTIAL, not a claim of full machine translation.
+- Production V2.3.17 still requires the next Streamlit Live run for final provider/source verification.

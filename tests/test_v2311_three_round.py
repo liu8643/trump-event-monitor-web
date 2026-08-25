@@ -47,8 +47,11 @@ def test_translation_failure_not_persisted_in_memory_cache(monkeypatch, tmp_path
     monkeypatch.setattr(tr.requests,"get",lambda *a,**k: Resp())
     first=translate_text("Trump announces tariff plan")
     second=translate_text("Trump announces tariff plan")
-    assert not first.text_zh
+    assert first.text_zh and first.provider=="LOCAL_RULE_ZH_TW"
+    assert first.status.startswith("SUCCESS:LOCAL_RULE_PARTIAL")
+    # LOCAL partial must not be persisted: a later provider recovery can upgrade it.
     assert second.text_zh=="川普宣布關稅方案"
+    assert second.provider=="GOOGLE_WEB_UNOFFICIAL"
 
 
 def test_gdelt_returns_direct_publisher_url(monkeypatch):

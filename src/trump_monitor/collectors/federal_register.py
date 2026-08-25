@@ -21,7 +21,7 @@ class FederalRegisterAdapter(SourceAdapter):
             "conditions[publication_date][lte]":end.date().isoformat(),
         }
         try:
-            r=requests.get(self.endpoint,params=params,timeout=self.timeout,headers={"User-Agent":"TrumpEventMonitor/2.3.16"})
+            r=requests.get(self.endpoint,params=params,timeout=self.timeout,headers={"User-Agent":"TrumpEventMonitor/2.3.17"})
             r.raise_for_status(); payload=r.json()
         except Exception as exc:
             raise SourceError(f"Federal Register 取得失敗: {type(exc).__name__}") from exc

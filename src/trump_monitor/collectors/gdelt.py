@@ -179,13 +179,18 @@ class GdeltDocAdapter(SourceAdapter):
         last_error = ""
         for attempt in range(attempts):
             try:
-                r = requests.get(self.endpoint, params=params, timeout=self.timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.15"})
+                r = requests.get(self.endpoint, params=params, timeout=self.timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.17"})
             except requests.RequestException as exc:
                 last_error = f"GDELT 連線失敗: {type(exc).__name__}"
                 if attempt + 1 < attempts:
                     time.sleep(min_gap)
                     continue
-                return self._cached_or_raise(start, end, last_error)
+                # V2.3.17: timeout/transport failure from this public endpoint is an
+                # expected degraded-source condition in five-minute monitoring.
+                # Open the same persisted circuit used for 429 and avoid repeated
+                # traceback spam/latency on subsequent runs.
+                self._mark_circuit(last_error)
+                return self._cached_or_degraded(start, end, last_error)
 
             body_preview = " ".join((getattr(r, "text", "") or "").split())[:180]
             if r.status_code == 200:
