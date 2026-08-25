@@ -1,0 +1,21 @@
+V2.3.18 verification — 2026-08-25
+Basis: Production Live Run TRUMP-RUN-20260825-142901 + Excel/CSV/Debug evidence.
+
+pytest: 88 passed / 0 failed
+coverage: 80%
+compileall src/app/scripts/tests: PASS
+SAMPLE smoke: PASS; events=6; status=SUCCESS; artifacts=7
+
+V2.3.18 regressions:
+- literal 50% Canada auto-tariff event-family regex: PASS
+- Supreme Court mail-voting duplicate family: PASS
+- Operation Economic Outcast official family: PASS
+- Iranian classification -> geopolitics/energy: PASS
+- tariff suspension/easing impact regime: PASS
+- tariff hike keeps escalation regime: PASS
+- local-rule Canada retaliatory tariff semantics: PASS
+- local-rule Economic Outcast terminology: PASS
+
+Production validation boundary:
+- These code-path fixes are regression-tested in the build environment.
+- Final Python 3.11/3.14 GitHub matrix and Streamlit Production behavior require post-upload CI/Live validation.

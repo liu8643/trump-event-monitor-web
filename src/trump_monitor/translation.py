@@ -77,7 +77,7 @@ def _provider() -> str:
 def _fallback_providers() -> list[str]:
     """Ordered public fallbacks.
 
-    V2.3.17 retains a second no-key provider after MyMemory so one public-service
+    V2.3.18 retains a second no-key provider after MyMemory so one public-service
     quota does not erase all Chinese output.  Values are always evidence-labeled.
     """
     raw = os.getenv("TRANSLATION_FALLBACK_PROVIDER", "MYMEMORY,LINGVA").strip().upper()
@@ -209,7 +209,7 @@ def _translate_google_web(text: str) -> TranslationResult:
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.17"})
+                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.18"})
                 status_code = int(getattr(r, "status_code", 200))
                 if status_code == 429:
                     _mark_google_blocked()
@@ -258,7 +258,7 @@ def _translate_google_web_batch(texts: list[str]) -> dict[str, TranslationResult
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.17"})
+                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.18"})
                 code = int(getattr(r, "status_code", 200))
                 if code == 429:
                     _mark_google_blocked()
@@ -344,7 +344,7 @@ def _translate_mymemory_batch(texts: list[str]) -> dict[str, TranslationResult]:
         params["de"] = email
     try:
         _throttle("TRANSLATION_MYMEMORY_RATE_LIMIT_SECONDS", "0.8")
-        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.17"})
+        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.18"})
         code = int(getattr(r, "status_code", 200))
         if code == 429:
             _mark_mymemory_blocked()
@@ -408,7 +408,7 @@ def _translate_lingva_batch(texts: list[str]) -> dict[str, TranslationResult]:
         try:
             _throttle("TRANSLATION_LINGVA_RATE_LIMIT_SECONDS", "0.7")
             url=f"{base}/api/v1/en/zh/{quote(joined, safe='')}"
-            r=requests.get(url, timeout=timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.17"})
+            r=requests.get(url, timeout=timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.18"})
             code=int(getattr(r,"status_code",200))
             if code==429:
                 last="FAILED:HTTP_429"
@@ -510,14 +510,17 @@ def _translate_local_rule(text: str) -> TranslationResult:
         (r"(?:canada|canadian).*(?:50%|50 percent).*(?:tariff|tariffs).*(?:car|cars|truck|trucks|auto|vehicle)", "川普宣布／威脅將加拿大汽車與卡車關稅提高至50%"),
         (r"(?:tariff|tariffs).*(?:canada|canadian).*(?:50%|50 percent).*(?:car|cars|truck|trucks|auto|vehicle)", "川普宣布／威脅將加拿大汽車與卡車關稅提高至50%"),
         (r"(?:anti-iran|iran).*(?:sanction|sanctions)", "川普政府宣布針對伊朗的制裁措施／全球制裁計畫"),
-        (r"operation economic outcast", "美國政府推動針對伊朗的「經濟排斥行動」"),
+        (r"remarks from secretary of the treasury.*operation economic outcast", "美國財政部長就「經濟孤立行動」及對伊朗經濟制裁措施發表談話"),
+        (r"operation economic outcast.*(?:iran|iranian)|(?:iran|iranian).*operation economic outcast", "「經濟孤立行動」：美國推動全面孤立伊朗政權的經濟制裁措施"),
         (r"secret service.*iran.*(?:threat|threatening).*barron", "美國特勤局注意到伊朗媒體發布威脅巴倫・川普安全的內容"),
         (r"approval.*(?:iran war|war).*poll|poll.*approval", "民調顯示川普支持度與美國民眾對伊朗戰爭支持出現變化"),
         (r"h-?1b.*(?:fee|fees)", "川普政府推動H-1B簽證費用政策調整"),
         (r"(?:immigration|deport|deported|border|asylum|visa|ice)", "川普政府移民／邊境政策相關事件"),
         (r"federal register|temporary suspension of additional duties", "美國聯邦公報公布與關稅／附加稅調整相關的正式文件"),
         (r"secretary of the treasury.*(?:iran|outcast)|treasury.*(?:iran|sanction)", "美國財政部公布與伊朗制裁／金融政策相關的官方訊息"),
-        (r"(?:tariff|tariffs|trade war)", "川普關稅／國際貿易政策相關事件"),
+        (r"canada.*retaliatory tariff|retaliatory tariff.*canada", "加拿大宣布報復性關稅，以回應川普政府的貿易施壓"),
+        (r"canada.*(?:tariff|tariffs|trade war)|(?:tariff|tariffs|trade war).*canada", "美加關稅／貿易衝突出現新的政策行動或升級"),
+        (r"(?:tariff|tariffs|trade war)", "川普政府關稅／國際貿易政策出現新進展"),
         (r"(?:iran|hormuz|military|war|sanction)", "川普政府地緣政治／能源與國安相關事件"),
         (r"(?:election|ballot|voting|vote|senate|congress|supreme court)", "川普政府美國政治／選舉制度相關事件"),
         (r"(?:medicaid|vaccine|healthcare|health care)", "川普政府醫療／社會政策相關事件"),
@@ -703,5 +706,7 @@ def translate_many(texts: Iterable[str], max_workers: int | None = None) -> dict
     attempted = ",".join(f"{k}:{v}" for k,v in sorted(attempted_counts.items())) or "NONE"
     effective = ",".join(f"{k}:{v}" for k,v in sorted(success_counts.items())) or "NONE"
     statuses = ",".join(f"{k}:{v}" for k,v in sorted(status_counts.items())) or "NONE"
-    logger.info("translation batch | requested=%d | success=%d | failed=%d | primary_provider=%s | attempted_providers=%s | effective_success_providers=%s | result_statuses=%s | elapsed=%.2fs", len(unique), success, failed, provider, attempted, effective, statuses, time.monotonic()-started)
+    full_success = sum(1 for r in results.values() if r.text_zh and r.provider != "LOCAL_RULE_ZH_TW")
+    local_partial = sum(1 for r in results.values() if r.text_zh and r.provider == "LOCAL_RULE_ZH_TW")
+    logger.info("translation batch | requested=%d | success=%d | full_success=%d | local_partial=%d | failed=%d | primary_provider=%s | attempted_providers=%s | effective_success_providers=%s | result_statuses=%s | elapsed=%.2fs", len(unique), success, full_success, local_partial, failed, provider, attempted, effective, statuses, time.monotonic()-started)
     return results

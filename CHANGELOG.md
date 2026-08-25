@@ -157,3 +157,12 @@
 - Adds Federal Register no-key API and U.S. Treasury official press-release pages as direct first-party sources to reduce Google RSS acquisition concentration.
 - GDELT timeout reduced for a 5-minute monitoring workload; persisted circuit/degraded behavior retained.
 - Truth rendered-browser layer is optional and disabled by default. Chromium/Playwright are removed from default deployment because Live logs show ~257 MB download / ~995 MB installed footprint while Truth still returns a Cloudflare challenge. Static HTML + manual review remain.
+
+## V2.3.18 — 2026-08-25
+- Fixed a production clustering regex bug where `50%` could not match because a word-boundary was placed after `%`.
+- Added narrow event families for Supreme Court mail-voting rulings and Iran `Operation Economic Outcast` official actions.
+- Added event-context market impact regime for tariff easing/suspension versus tariff escalation.
+- Fixed `Iranian` classification so official Iran policy rows do not fall into generic politics.
+- Improved LOCAL_RULE_ZH_TW templates for Canada retaliatory tariffs and Operation Economic Outcast.
+- Translation logs now separate full machine/public translation from local-partial fallback counts.
+- Added V2.3.18 live regression tests for the 14:29 production findings.

@@ -1,0 +1,15 @@
+V2.3.18 modified/new files
+app/streamlit_app.py
+src/trump_monitor/clustering.py
+src/trump_monitor/classifier.py
+src/trump_monitor/ai_service.py
+src/trump_monitor/impact.py
+src/trump_monitor/engine.py
+src/trump_monitor/translation.py
+src/trump_monitor/exporters/excel_exporter.py
+tests/test_v2318_live_regressions.py
+pyproject.toml
+README.md
+CHANGELOG.md
+docs/MODIFIED_FILES_V2.3.18.txt
+docs/TEST_RESULTS_V2.3.18.txt

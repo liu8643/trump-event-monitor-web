@@ -45,9 +45,23 @@ def _event_family(item: RawItem) -> str:
     # into CNBC/BBC/PBS, Reuters, and Washington Post/Guardian/Politico clusters.
     # Merge only the distinctive policy-action signature; generic Canada trade
     # commentary and retaliation stories remain separate events.
-    if (re.search(r"\bcanad(?:a|ian)\b", text) and re.search(r"\b50\s*(?:%|percent)\b", text)
+    if (re.search(r"\bcanad(?:a|ian)\b", text) and re.search(r"\b50\s*(?:%|percent\b)", text)
             and re.search(r"\btariff", text) and re.search(r"\b(auto|autos|automotive|car|cars|truck|trucks|vehicle|vehicles)\b", text)):
         return "CANADA_50_AUTO_TARIFF_ACTION"
+
+    # V2.3.18: Supreme Court mail-voting ruling appeared as a 16-source main
+    # cluster plus a separate CNBC event in the 14:29 production report.  This
+    # narrow family represents the same court action even when wording alternates
+    # between mail voting, vote-by-mail and mail-ballot.
+    if (re.search(r"\bsupreme court\b", text)
+            and re.search(r"\b(mail(?:-in)? vot|mail voting|vote-by-mail|mail[- ]ballot|mail ballot)\b", text)
+            and re.search(r"\b(trump|administration|order|restriction|rule)\b", text)):
+        return "SCOTUS_MAIL_VOTING_ORDER"
+
+    # V2.3.18: Treasury's formal Operation Economic Outcast launch/remarks are
+    # one policy action, not separate general-politics and geopolitics events.
+    if re.search(r"\boperation economic outcast\b", text) and re.search(r"\biran(?:ian)?\b", text):
+        return "IRAN_OPERATION_ECONOMIC_OUTCAST"
 
     if re.search(r"\bmedicaid\b|\bchip\b", text) and re.search(r"gender[- ]affirming|transgender", text):
         return "MEDICAID_GENDER_CARE_POLICY"

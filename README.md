@@ -99,3 +99,6 @@ V2.3.8 is a corrective release based on the 2026-08-12 17:44 Streamlit Cloud run
 - Adds Federal Register no-key API and U.S. Treasury official press-release pages as direct first-party sources to reduce Google RSS acquisition concentration.
 - GDELT timeout reduced for a 5-minute monitoring workload; persisted circuit/degraded behavior retained.
 - Truth rendered-browser layer is optional and disabled by default. Chromium/Playwright are removed from default deployment because Live logs show ~257 MB download / ~995 MB installed footprint while Truth still returns a Cloudflare challenge. Static HTML + manual review remain.
+
+### V2.3.18 live evidence fixes
+V2.3.18 is based on the 2026-08-25 14:29 production run. It keeps V2.3.17's guaranteed Chinese reading layer, while fixing event-fragmentation and market-direction issues discovered after bilingual output recovered. Literal `50%` Canada auto-tariff headlines are now recognized by the narrow event-family rule; Supreme Court mail-voting coverage and Operation Economic Outcast official coverage receive dedicated event families. Trade impact is now context-aware: tariff suspension/easing is not assigned the same negative market transmission as tariff hikes or retaliatory escalation.

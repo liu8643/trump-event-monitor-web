@@ -7,7 +7,7 @@ KEYWORDS = {
     "法律／監管／倫理": [r"\bfinancial disclosure\b",r"\bholdings?\b",r"\bstocks? gained\b",r"\bconflict of interest\b",r"\bethics?\b",r"\binsider\b",r"\bsubpoena\b",r"\binvestigation\b"],
     "總統安全／國安": [r"\bsecret service\b",r"\bair force one\b",r"\bsecret flight\b",r"\bassassinat",r"\bsecurity threat\b",r"\bthreats? against trump\b"],
     "醫療／社會政策": [r"\bmedicaid\b",r"\bvaccine(s)?\b",r"\bmmr\b",r"gender[- ]affirming",r"transgender",r"\bhealth care\b",r"\bhealthcare\b"],
-    "地緣政治／能源": [r"\biran\b",r"\bhormuz\b",r"\bwar\b",r"\bstrike(s|d)?\b",r"\bmilitary\b",r"\boil\b",r"\bisrael\b"],
+    "地緣政治／能源": [r"\biran(?:ian)?\b",r"\bhormuz\b",r"\bwar\b",r"\bstrike(s|d)?\b",r"\bmilitary\b",r"\boil\b",r"\bisrael\b"],
     "關稅／國際貿易": [r"\btariff(s)?\b",r"\btrade\b",r"\bcustoms\b",r"\bdut(y|ies)\b"],
     "美國政治／選舉制度": [r"\bsenate\b",r"\belection\b",r"\bvot(e|ing)\b",r"\bcongress\b",r"\bballot\b",r"\bsupreme court\b",r"\bnominee\b"],
     "社群訊號／TMTG": [r"\btmtg\b",r"\bdjt\b",r"truth social (traffic|revenue|contract|subscription|business)",r"posting spree"],
