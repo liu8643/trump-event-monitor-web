@@ -9,6 +9,8 @@ from trump_monitor.collectors.google_news_rss import GoogleNewsRssAdapter
 from trump_monitor.collectors.cnbc import CnbcNewsAdapter
 from trump_monitor.collectors.gdelt import GdeltDocAdapter
 from trump_monitor.collectors.whitehouse import WhiteHouseOfficialAdapter
+from trump_monitor.collectors.federal_register import FederalRegisterAdapter
+from trump_monitor.collectors.treasury import TreasuryOfficialAdapter
 from trump_monitor.collectors.gnews import GNewsAdapter
 from trump_monitor.collectors.newsapi import NewsApiAdapter
 import os
@@ -25,6 +27,8 @@ if cfg.truth_official_timeline_enabled:
     adapters.append(TruthTimelineCollector(cfg.truth_profile_url,cfg.truth_account,account_id=cfg.truth_official_account_id,timeout=cfg.truth_official_timeline_timeout,max_pages=cfg.truth_official_timeline_max_pages,rendered_html_enabled=cfg.truth_rendered_html_enabled,static_html_enabled=cfg.truth_static_html_enabled,rendered_timeout=cfg.truth_rendered_timeout,chromium_executable=cfg.truth_chromium_executable))
 adapters.extend([TruthManualImportAdapter(ROOT/cfg.truth_manual_import_path,cfg.truth_account),TruthSearchIndexAdapter(cfg.truth_account)])
 if cfg.whitehouse_enabled: adapters.append(WhiteHouseOfficialAdapter(timeout=cfg.whitehouse_timeout))
+if cfg.federal_register_enabled: adapters.append(FederalRegisterAdapter(timeout=cfg.federal_register_timeout))
+if cfg.treasury_enabled: adapters.append(TreasuryOfficialAdapter(timeout=cfg.treasury_timeout))
 if cfg.cnbc_enabled: adapters.append(CnbcNewsAdapter(timeout=cfg.cnbc_timeout))
 adapters.append(GoogleNewsRssAdapter())
 if cfg.gdelt_enabled: adapters.append(GdeltDocAdapter(timeout=cfg.gdelt_timeout))

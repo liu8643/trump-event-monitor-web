@@ -144,3 +144,10 @@
 - Excel/Word/PDF/HTML/JSON 同步新增/輸出雙語欄位；GTC machine schema 保持原22欄不變以維持相容性。
 - 修正 Streamlit 可信度 ProgressColumn：0.766 不再顯示為 1%，改為 77%。
 - Debug Log 新增 translation batch success/provider 記錄。
+
+
+## V2.3.16 — 2026-08-25 12:36 Live root-cause fix
+- Live translation regressed to 0/101 because both Google Web and MyMemory public providers were throttled. Adds explicit Google → MyMemory → Lingva public three-stage failover, success-only provider evidence, and clearer failure status.
+- Adds Federal Register no-key API and U.S. Treasury official press-release pages as direct first-party sources to reduce Google RSS acquisition concentration.
+- GDELT timeout reduced for a 5-minute monitoring workload; persisted circuit/degraded behavior retained.
+- Truth rendered-browser layer is optional and disabled by default. Chromium/Playwright are removed from default deployment because Live logs show ~257 MB download / ~995 MB installed footprint while Truth still returns a Cloudflare challenge. Static HTML + manual review remain.

@@ -13,7 +13,7 @@ sources:
     official_timeline_enabled: true
     official_timeline_timeout_seconds: 20
     official_timeline_max_pages: 8
-    rendered_html_enabled: true
+    rendered_html_enabled: false
     rendered_timeout_seconds: 25
     chromium_executable: ""
     static_html_enabled: true
@@ -27,7 +27,15 @@ sources:
   gdelt:
     enabled: true
     priority: 3
-    timeout_seconds: 20
+    timeout_seconds: 8
+  federal_register:
+    enabled: true
+    priority: 1
+    timeout_seconds: 10
+  treasury_official:
+    enabled: true
+    priority: 1
+    timeout_seconds: 10
   verification_media:
     publishers: ["Reuters", "Associated Press", "Bloomberg"]
     priority: 2

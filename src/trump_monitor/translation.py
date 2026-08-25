@@ -26,6 +26,7 @@ _RATE_LOCK = threading.Lock()
 _LAST_REQUEST_AT = 0.0
 _GOOGLE_BLOCKED_UNTIL = 0.0
 _MYMEMORY_BLOCKED_UNTIL = 0.0
+_LINGVA_BLOCKED_UNTIL = 0.0
 
 
 @dataclass(frozen=True)
@@ -73,9 +74,26 @@ def _provider() -> str:
     return value
 
 
+def _fallback_providers() -> list[str]:
+    """Ordered public fallbacks.
+
+    V2.3.16 allows a second no-key provider after MyMemory so one public-service
+    quota does not erase all Chinese output.  Values are always evidence-labeled.
+    """
+    raw = os.getenv("TRANSLATION_FALLBACK_PROVIDER", "MYMEMORY,LINGVA").strip().upper()
+    if raw in {"", "OFF", "NONE"}:
+        return []
+    out=[]
+    for value in re.split(r"[,;| ]+", raw):
+        value=value.strip()
+        if value in {"MYMEMORY", "LINGVA"} and value not in out:
+            out.append(value)
+    return out or ["MYMEMORY", "LINGVA"]
+
+
 def _fallback_provider() -> str:
-    value = os.getenv("TRANSLATION_FALLBACK_PROVIDER", "MYMEMORY").strip().upper()
-    return value if value in {"MYMEMORY", "OFF"} else "MYMEMORY"
+    providers=_fallback_providers()
+    return providers[0] if providers else "OFF"
 
 
 def _cache_path() -> Path:
@@ -191,7 +209,7 @@ def _translate_google_web(text: str) -> TranslationResult:
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.15"})
+                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.16"})
                 status_code = int(getattr(r, "status_code", 200))
                 if status_code == 429:
                     _mark_google_blocked()
@@ -240,7 +258,7 @@ def _translate_google_web_batch(texts: list[str]) -> dict[str, TranslationResult
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.15"})
+                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.16"})
                 code = int(getattr(r, "status_code", 200))
                 if code == 429:
                     _mark_google_blocked()
@@ -326,7 +344,7 @@ def _translate_mymemory_batch(texts: list[str]) -> dict[str, TranslationResult]:
         params["de"] = email
     try:
         _throttle("TRANSLATION_MYMEMORY_RATE_LIMIT_SECONDS", "0.8")
-        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.15"})
+        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.16"})
         code = int(getattr(r, "status_code", 200))
         if code == 429:
             _mark_mymemory_blocked()
@@ -357,6 +375,121 @@ def _translate_mymemory_batch(texts: list[str]) -> dict[str, TranslationResult]:
         return {t: TranslationResult("", "MYMEMORY_PUBLIC", "FAILED:INVALID_JSON") for t in texts}
 
 
+def _mark_lingva_blocked(seconds: float = 600.0) -> None:
+    global _LINGVA_BLOCKED_UNTIL
+    _LINGVA_BLOCKED_UNTIL = max(_LINGVA_BLOCKED_UNTIL, time.monotonic() + max(30.0, seconds))
+
+
+def _lingva_circuit_open() -> bool:
+    return time.monotonic() < _LINGVA_BLOCKED_UNTIL
+
+
+def _lingva_instances() -> list[str]:
+    raw=os.getenv("LINGVA_INSTANCES", "https://lingva.ml,https://translate.plausibility.cloud").strip()
+    return [x.strip().rstrip("/") for x in raw.split(",") if x.strip()]
+
+
+def _translate_lingva_batch(texts: list[str]) -> dict[str, TranslationResult]:
+    """Third public fallback using Lingva's documented REST API.
+
+    Headlines are public information.  The provider is explicitly identified as
+    PUBLIC and is never treated as a licensed/first-party evidence source.
+    """
+    from urllib.parse import quote
+    if not texts:
+        return {}
+    if _lingva_circuit_open():
+        return {t: TranslationResult("", "LINGVA_PUBLIC", "FAILED:CIRCUIT_OPEN") for t in texts}
+    marker_prefix="LGEISSEG"
+    joined="\n".join(f"[[{marker_prefix}{idx:03d}]] {text}" for idx,text in enumerate(texts))
+    timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12"))
+    last="FAILED:NO_INSTANCE"
+    for base in _lingva_instances():
+        try:
+            _throttle("TRANSLATION_LINGVA_RATE_LIMIT_SECONDS", "0.7")
+            url=f"{base}/api/v1/en/zh/{quote(joined, safe='')}"
+            r=requests.get(url, timeout=timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.16"})
+            code=int(getattr(r,"status_code",200))
+            if code==429:
+                last="FAILED:HTTP_429"
+                continue
+            r.raise_for_status()
+            payload=r.json()
+            translated=html.unescape(str(payload.get("translation") or "")).strip() if isinstance(payload,dict) else ""
+            pat=re.compile(r"\[\["+marker_prefix+r"(\d{3})\]\]\s*")
+            matches=list(pat.finditer(translated))
+            if len(texts)==1 and not matches:
+                return {texts[0]: _validate_translation(texts[0],translated,"LINGVA_PUBLIC")}
+            if len(matches)!=len(texts):
+                last="FAILED:BATCH_MARKER_PARSE"
+                continue
+            out={}
+            for pos,m in enumerate(matches):
+                idx=int(m.group(1)); end=matches[pos+1].start() if pos+1<len(matches) else len(translated)
+                out[texts[idx]]=_validate_translation(texts[idx],translated[m.end():end].strip(),"LINGVA_PUBLIC")
+            if any(v.text_zh for v in out.values()):
+                return out
+            last="FAILED:NO_VALID_TRANSLATION"
+        except requests.Timeout:
+            last="FAILED:TIMEOUT"
+        except requests.HTTPError as exc:
+            code=getattr(exc.response,"status_code",None); last=f"FAILED:HTTP_{code}" if code else "FAILED:HTTP_ERROR"
+        except requests.RequestException as exc:
+            last=f"FAILED:{type(exc).__name__}"
+        except ValueError:
+            last="FAILED:INVALID_JSON"
+    _mark_lingva_blocked(float(os.getenv("TRANSLATION_LINGVA_CIRCUIT_SECONDS","600")))
+    return {t: TranslationResult("", "LINGVA_PUBLIC", last+":CIRCUIT_OPEN") for t in texts}
+
+
+def _fallback_pending(texts: list[str], results: dict[str, TranslationResult]) -> None:
+    """Run ordered public fallback providers and preserve full status evidence."""
+    remaining=list(dict.fromkeys(texts))
+    for provider in _fallback_providers():
+        if not remaining:
+            return
+        next_remaining=[]
+        if provider=="MYMEMORY":
+            max_items=max(1,min(3,int(os.getenv("TRANSLATION_MYMEMORY_BATCH_SIZE","2"))))
+            max_chars=max(180,int(os.getenv("TRANSLATION_MYMEMORY_MAX_CHARS","320")))
+            packs=_pack_texts(remaining,max_items,max_chars)
+            for pack in packs:
+                fb=_translate_mymemory_batch(pack)
+                for text in pack:
+                    res=fb.get(text,TranslationResult("","MYMEMORY_PUBLIC","FAILED:NOT_RETURNED"))
+                    if res.text_zh:
+                        results[text]=res
+                        with _CACHE_LOCK: _CACHE[text]=res
+                    else:
+                        prior=results.get(text); prior_status=prior.status if prior else "NOT_RUN"
+                        results[text]=TranslationResult("",res.provider,f"PRIMARY:{prior_status};FALLBACK:{res.status}")
+                        next_remaining.append(text)
+                if _mymemory_circuit_open():
+                    # Mark unattempted rows explicitly; the next provider may still recover them.
+                    rest=[x for x in remaining if x not in {y for pack0 in packs[:packs.index(pack)+1] for y in pack0}]
+                    for text in rest:
+                        prior=results.get(text); prior_status=prior.status if prior else "NOT_RUN"
+                        results[text]=TranslationResult("","MYMEMORY_PUBLIC",f"PRIMARY:{prior_status};FALLBACK:FAILED:CIRCUIT_OPEN")
+                    next_remaining.extend(rest)
+                    break
+        elif provider=="LINGVA":
+            max_items=max(1,min(3,int(os.getenv("TRANSLATION_LINGVA_BATCH_SIZE","2"))))
+            max_chars=max(160,int(os.getenv("TRANSLATION_LINGVA_MAX_CHARS","300")))
+            for pack in _pack_texts(remaining,max_items,max_chars):
+                fb=_translate_lingva_batch(pack)
+                for text in pack:
+                    res=fb.get(text,TranslationResult("","LINGVA_PUBLIC","FAILED:NOT_RETURNED"))
+                    if res.text_zh:
+                        results[text]=res
+                        with _CACHE_LOCK: _CACHE[text]=res
+                    else:
+                        prior=results.get(text); prior_status=prior.status if prior else "NOT_RUN"
+                        results[text]=TranslationResult("",res.provider,f"PRIMARY:{prior_status};FALLBACK:{res.status}")
+                        next_remaining.append(text)
+                if _lingva_circuit_open():
+                    break
+        remaining=list(dict.fromkeys(next_remaining))
+
 def translate_text(text: str) -> TranslationResult:
     clean = " ".join((text or "").split()).strip()
     if not clean:
@@ -378,12 +511,10 @@ def translate_text(text: str) -> TranslationResult:
             result = _translate_mymemory_batch([clean])[clean]
         else:
             result = _translate_google_web(clean)
-            if not result.text_zh and _fallback_provider() == "MYMEMORY":
-                fallback = _translate_mymemory_batch([clean])[clean]
-                if fallback.text_zh:
-                    result = fallback
-                else:
-                    result = TranslationResult("", fallback.provider, f"PRIMARY:{result.status};FALLBACK:{fallback.status}")
+            if not result.text_zh and _fallback_providers():
+                tmp={clean: result}
+                _fallback_pending([clean], tmp)
+                result=tmp[clean]
     except Exception as exc:
         logger.warning("translation failed | provider=%s | error=%s | text=%s", provider, type(exc).__name__, clean[:120])
         result = TranslationResult("", provider, f"FAILED:{type(exc).__name__}")
@@ -442,23 +573,8 @@ def translate_many(texts: Iterable[str], max_workers: int | None = None) -> dict
             if i + batch_size < len(pending):
                 time.sleep(max(0.0, float(os.getenv("TRANSLATION_BATCH_PAUSE_SECONDS", "1.0"))))
 
-        if google_failed and _fallback_provider() == "MYMEMORY":
-            # Public fallback uses smaller character-bounded batches because the API query limit is tighter.
-            max_items = max(1, min(4, int(os.getenv("TRANSLATION_MYMEMORY_BATCH_SIZE", "3"))))
-            max_chars = max(180, int(os.getenv("TRANSLATION_MYMEMORY_MAX_CHARS", "420")))
-            for pack in _pack_texts(list(dict.fromkeys(google_failed)), max_items, max_chars):
-                fb = _translate_mymemory_batch(pack)
-                for text, res in fb.items():
-                    if res.text_zh:
-                        results[text] = res
-                        with _CACHE_LOCK:
-                            _CACHE[text] = res
-                    else:
-                        primary = results.get(text)
-                        primary_status = primary.status if primary else "NOT_RUN"
-                        results[text] = TranslationResult("", res.provider, f"PRIMARY:{primary_status};FALLBACK:{res.status}")
-                if _mymemory_circuit_open():
-                    break
+        if google_failed and _fallback_providers():
+            _fallback_pending(list(dict.fromkeys(google_failed)), results)
         _persist_cache()
     elif provider == "MYMEMORY":
         for pack in _pack_texts(pending, max(1, min(4, int(os.getenv("TRANSLATION_MYMEMORY_BATCH_SIZE", "3")))), max(180, int(os.getenv("TRANSLATION_MYMEMORY_MAX_CHARS", "420")))):
@@ -488,9 +604,18 @@ def translate_many(texts: Iterable[str], max_workers: int | None = None) -> dict
         results.setdefault(text, TranslationResult("", provider, "FAILED:NOT_ATTEMPTED"))
     success = sum(1 for r in results.values() if r.text_zh)
     failed = len(unique) - success
-    provider_counts: dict[str, int] = {}
+    attempted_counts: dict[str, int] = {}
+    success_counts: dict[str, int] = {}
+    status_counts: dict[str, int] = {}
     for r in results.values():
-        provider_counts[r.provider] = provider_counts.get(r.provider, 0) + 1
-    effective = ",".join(f"{k}:{v}" for k,v in sorted(provider_counts.items())) or "NONE"
-    logger.info("translation batch | requested=%d | success=%d | failed=%d | primary_provider=%s | effective_providers=%s | elapsed=%.2fs", len(unique), success, failed, provider, effective, time.monotonic()-started)
+        attempted_counts[r.provider] = attempted_counts.get(r.provider, 0) + 1
+        if r.text_zh:
+            success_counts[r.provider] = success_counts.get(r.provider, 0) + 1
+        status_key = r.status.split(":", 2)[0:2]
+        status_label = ":".join(status_key)
+        status_counts[status_label] = status_counts.get(status_label, 0) + 1
+    attempted = ",".join(f"{k}:{v}" for k,v in sorted(attempted_counts.items())) or "NONE"
+    effective = ",".join(f"{k}:{v}" for k,v in sorted(success_counts.items())) or "NONE"
+    statuses = ",".join(f"{k}:{v}" for k,v in sorted(status_counts.items())) or "NONE"
+    logger.info("translation batch | requested=%d | success=%d | failed=%d | primary_provider=%s | attempted_providers=%s | effective_success_providers=%s | result_statuses=%s | elapsed=%.2fs", len(unique), success, failed, provider, attempted, effective, statuses, time.monotonic()-started)
     return results

@@ -25,7 +25,7 @@ class AppConfig:
     truth_official_timeline_enabled: bool = True
     truth_official_timeline_timeout: int = 20
     truth_official_timeline_max_pages: int = 8
-    truth_rendered_html_enabled: bool = True
+    truth_rendered_html_enabled: bool = False
     truth_static_html_enabled: bool = True
     truth_rendered_timeout: int = 25
     truth_chromium_executable: str = ""
@@ -34,7 +34,11 @@ class AppConfig:
     whitehouse_enabled: bool = True
     whitehouse_timeout: int = 15
     gdelt_enabled: bool = True
-    gdelt_timeout: int = 20
+    gdelt_timeout: int = 8
+    federal_register_enabled: bool = True
+    federal_register_timeout: int = 10
+    treasury_enabled: bool = True
+    treasury_timeout: int = 10
 
     @property
     def sample_mode(self) -> bool:
@@ -50,6 +54,8 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
     cnbc = sources.get("cnbc", {})
     whitehouse = sources.get("whitehouse_official", {})
     gdelt = sources.get("gdelt", {})
+    federal_register = sources.get("federal_register", {})
+    treasury = sources.get("treasury_official", {})
     mode = str(app.get("mode", "AUTO")).upper()
     if mode not in {"AUTO", "ONLINE", "SAMPLE"}: mode = "AUTO"
     return AppConfig(
@@ -64,7 +70,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         truth_official_timeline_enabled=bool(truth.get("official_timeline_enabled", True)),
         truth_official_timeline_timeout=int(truth.get("official_timeline_timeout_seconds", 20)),
         truth_official_timeline_max_pages=int(truth.get("official_timeline_max_pages", 8)),
-        truth_rendered_html_enabled=bool(truth.get("rendered_html_enabled", True)),
+        truth_rendered_html_enabled=bool(truth.get("rendered_html_enabled", False)),
         truth_static_html_enabled=bool(truth.get("static_html_enabled", True)),
         truth_rendered_timeout=int(truth.get("rendered_timeout_seconds", 25)),
         truth_chromium_executable=str(truth.get("chromium_executable", "")),
@@ -73,5 +79,7 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         whitehouse_enabled=bool(whitehouse.get("enabled", True)),
         whitehouse_timeout=int(whitehouse.get("timeout_seconds", 15)),
         gdelt_enabled=bool(gdelt.get("enabled", True)),
-        gdelt_timeout=int(gdelt.get("timeout_seconds", 20)),
+        gdelt_timeout=int(gdelt.get("timeout_seconds", 8)),
+        federal_register_enabled=bool(federal_register.get("enabled", True)), federal_register_timeout=int(federal_register.get("timeout_seconds", 10)),
+        treasury_enabled=bool(treasury.get("enabled", True)), treasury_timeout=int(treasury.get("timeout_seconds", 10)),
     )

@@ -1,0 +1,26 @@
+V2.3.16 modified/added files
+2026-08-25 12:36 Live root-cause release
+
+app/streamlit_app.py
+scripts/scheduled_run.py
+src/trump_monitor/config.py
+src/trump_monitor/translation.py
+src/trump_monitor/engine.py
+src/trump_monitor/source_health.py
+src/trump_monitor/exporters/excel_exporter.py
+src/trump_monitor/collectors/source_policy.py
+src/trump_monitor/collectors/truth_social.py
+src/trump_monitor/collectors/federal_register.py (new)
+src/trump_monitor/collectors/treasury.py (new)
+config.yaml
+config.example.yaml
+requirements.txt
+packages.txt
+tests/conftest.py
+tests/test_source_health_dashboard.py
+tests/test_v2316_live_regressions.py (new)
+pyproject.toml
+README.md
+CHANGELOG.md
+docs/MODIFIED_FILES_V2.3.16.txt
+docs/TEST_RESULTS_V2.3.16.txt

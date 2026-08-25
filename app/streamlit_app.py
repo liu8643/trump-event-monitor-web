@@ -21,6 +21,8 @@ from trump_monitor.collectors.google_news_rss import GoogleNewsRssAdapter
 from trump_monitor.collectors.cnbc import CnbcNewsAdapter
 from trump_monitor.collectors.gdelt import GdeltDocAdapter
 from trump_monitor.collectors.whitehouse import WhiteHouseOfficialAdapter
+from trump_monitor.collectors.federal_register import FederalRegisterAdapter
+from trump_monitor.collectors.treasury import TreasuryOfficialAdapter
 from trump_monitor.collectors.truth_social import TruthTimelineCollector, TruthOfficialApiAdapter, TruthManualImportAdapter, TruthSearchIndexAdapter
 from trump_monitor.config import load_config
 from trump_monitor.engine import TrumpEventEngine
@@ -39,7 +41,7 @@ except Exception:
     st_autorefresh = None
 
 st.set_page_config(page_title="川普72小時事件監控", page_icon="📡", layout="wide")
-APP_VERSION = "2.3.15"
+APP_VERSION = "2.3.16"
 
 CONFIG_PATH = ROOT / "config.yaml"
 if not CONFIG_PATH.exists():
@@ -80,6 +82,10 @@ def build_adapters(mode: str):
     adapters.append(TruthManualImportAdapter(RUNTIME_TRUTH_PATH if RUNTIME_TRUTH_PATH.exists() else ROOT / config.truth_manual_import_path, config.truth_account))
     if config.whitehouse_enabled:
         adapters.append(WhiteHouseOfficialAdapter(timeout=config.whitehouse_timeout))
+    if config.federal_register_enabled:
+        adapters.append(FederalRegisterAdapter(timeout=config.federal_register_timeout))
+    if config.treasury_enabled:
+        adapters.append(TreasuryOfficialAdapter(timeout=config.treasury_timeout))
     adapters.append(TruthSearchIndexAdapter(config.truth_account))
     # CNBC originally arrived indirectly inside Google News RSS. V2.2.2 gives it an explicit adapter/status while retaining the general RSS source.
     if config.cnbc_enabled:
@@ -120,7 +126,7 @@ def get_result():
 
 with st.sidebar:
     st.title("📡 Trump News Center")
-    st.caption(f"正式版本 v{APP_VERSION}｜三輪交互修正版：雙語韌性＋多來源直連＋來源證據保真＋Debug Log")
+    st.caption(f"正式版本 v{APP_VERSION}｜三輪交互修正版：翻譯三層Failover＋官方直連擴充＋事件證據保真＋Debug Log")
     page = st.radio("功能", [
         "首頁總覽","事件中心","事件分析","新聞明細","Truth貼文","市場影響","台股候選","GTC預覽","報表中心","歷史執行","來源設定","系統Log"
     ])

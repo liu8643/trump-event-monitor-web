@@ -1,0 +1,23 @@
+V2.3.16 verification
+
+Live evidence basis:
+- TRUMP-RUN-20260825-123628
+- raw=104, unique=101, clusters=66, material=3, status=PARTIAL
+- translation requested=101, success=0, failed=101
+- Google Web circuit opened; MyMemory also unavailable/circuit; provider evidence was misleading because attempted providers were displayed as if effective
+- GDELT degraded with HTTP 429, adapter latency 12.075s
+- Streamlit deployment installed Chromium: 257 MB download / ~995 MB installed footprint; rendered Truth still returned Cloudflare challenge
+
+Post-fix deterministic verification:
+- pytest: 76 passed / 0 failed
+- coverage: 79%
+- compileall src/app/scripts/tests: PASS
+- SAMPLE smoke: PASS; events=6; status=SUCCESS; artifacts=7
+- Google + MyMemory throttle -> Lingva fallback regression: PASS (mock)
+- Federal Register official direct URL parser: PASS (mock)
+- U.S. Treasury official direct URL parser: PASS (mock)
+- Taiwan terminology normalization through Lingva: PASS (mock)
+- rendered browser disabled by default regression: PASS
+
+Verification boundary:
+- Public translation/provider and official-source network availability are not claimed as live-pass inside the build sandbox. The next Streamlit Production run is the final live verification.

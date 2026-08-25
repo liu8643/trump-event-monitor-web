@@ -159,8 +159,9 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
       ["GTC WatchList","JSON/CSV review-required輸出","未直接寫外部GTC DB","REVIEW_REQUIRED","PASS"],
       ["Word/PDF","一鍵下載","PDF字型依部署環境","fallback字型","PASS"],
       ["每5分鐘更新","頁面開啟自動刷新＋GitHub排程","Cloud sleep/GitHub cron可能延遲","best effort","PASS"],
-      ["中英文同步","英文原文＋繁中翻譯欄位；UI/Excel/Word/PDF/HTML/JSON共用","AUTO優先LLM；無LLM時Google Web，遇429立即Circuit Break並改用MyMemory public fallback","翻譯失敗不影響英文原文與事件判斷", (lambda total,zh: "PASS" if total and zh/total>=0.8 else f"DEGRADED:{zh}/{total}" if total else "NO_DATA")(sum(len(e.sources) for e in result.events),sum(1 for e in result.events for x in e.sources if x.title_zh))],
-      ["翻譯Provider實況","、".join(f"{k}:{v}" for k,v in sorted(__import__("collections").Counter((x.translation_provider or "NONE") for e in result.events for x in e.sources).items())),"Public provider無企業SLA，建議正式環境設定AI_API_URL/API_KEY/MODEL","來源欄保留provider/status；不可把fallback冒充LLM","TRACEABLE"],
+      ["中英文同步","英文原文＋繁中翻譯欄位；UI/Excel/Word/PDF/HTML/JSON共用","AUTO優先LLM；無LLM時Google Web→MyMemory→Lingva public三級fallback，皆為best-effort","翻譯失敗不影響英文原文與事件判斷", (lambda total,zh: "PASS" if total and zh/total>=0.8 else f"DEGRADED:{zh}/{total}" if total else "NO_DATA")(sum(len(e.sources) for e in result.events),sum(1 for e in result.events for x in e.sources if x.title_zh))],
+      ["翻譯成功Provider實況","、".join(f"{k}:{v}" for k,v in sorted(__import__("collections").Counter((x.translation_provider or "NONE") for e in result.events for x in e.sources if x.title_zh).items())) or "NONE","只統計真正取得繁中的Provider","來源欄保留provider/status；不可把attempt/fallback冒充成功","TRACEABLE"],
+      ["翻譯失敗Provider實況","、".join(f"{k}:{v}" for k,v in sorted(__import__("collections").Counter((x.translation_provider or "NONE") for e in result.events for x in e.sources if not x.title_zh).items())) or "NONE","Public provider無企業SLA，建議正式環境設定AI_API_URL/API_KEY/MODEL","Google→MyMemory→Lingva皆失敗時保留English並明確DEGRADED","TRACEABLE"],
       ["歷史資料庫","run/event/source/impact/watchlist SQLite","Streamlit本機磁碟非永久","建議外接PostgreSQL/S3","PASS"],
     ]: ws8.append(r)
     _body(ws8,4,13,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"

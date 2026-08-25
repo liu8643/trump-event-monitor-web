@@ -9,6 +9,8 @@ from trump_monitor.models import RunResult
 SOURCE_HEALTH_ORDER = [
     ("truth_official_timeline", "Truth Official", "第一手公開時間軸"),
     ("whitehouse_official", "White House Official", "第一手官方公告／聲明／總統行動直連"),
+    ("federal_register", "Federal Register", "官方法規／總統文件免Key API直連"),
+    ("treasury_official", "U.S. Treasury", "官方制裁／財金政策新聞直連"),
     ("truth_search_index", "Truth Search", "搜尋索引／降級發現"),
     ("publisher:reuters", "Reuters", "媒體publisher覆蓋（取得通道另列）"),
     ("publisher:ap", "AP", "媒體publisher覆蓋（取得通道另列）"),

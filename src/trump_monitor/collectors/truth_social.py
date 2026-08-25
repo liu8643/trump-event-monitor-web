@@ -348,6 +348,8 @@ class TruthTimelineCollector(SourceAdapter):
         rendered=[]
         if self.rendered_html_enabled:
             rendered=self._collect_rendered_html(start,end)
+        else:
+            self.last_observations.append(self._observation("RENDERED_HTML", "SKIPPED_DISABLED", note="Rendered browser layer disabled by default to avoid ~1GB Chromium deployment cost; enable explicitly only for diagnostic runs."))
         if rendered:
             self.last_status=f"SUCCESS_RENDERED_PARTIAL:{len(rendered)}"
             return rendered

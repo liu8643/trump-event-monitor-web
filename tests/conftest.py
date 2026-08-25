@@ -23,6 +23,7 @@ def _isolate_translation_runtime(monkeypatch, tmp_path):
     tr._CACHE_LOADED = True
     tr._GOOGLE_BLOCKED_UNTIL = 0.0
     tr._MYMEMORY_BLOCKED_UNTIL = 0.0
+    tr._LINGVA_BLOCKED_UNTIL = 0.0
     tr._LAST_REQUEST_AT = 0.0
 
     yield
@@ -31,4 +32,5 @@ def _isolate_translation_runtime(monkeypatch, tmp_path):
         tr._CACHE.clear()
     tr._GOOGLE_BLOCKED_UNTIL = 0.0
     tr._MYMEMORY_BLOCKED_UNTIL = 0.0
+    tr._LINGVA_BLOCKED_UNTIL = 0.0
     tr._LAST_REQUEST_AT = 0.0

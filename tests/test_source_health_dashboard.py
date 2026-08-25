@@ -42,12 +42,16 @@ def _result() -> RunResult:
         schema_version="gtc.trump_event.v2.2",
         source_status={
             "truth_official_timeline": "FAILED:SourceError:HTTP_403",
+            "federal_register": "SUCCESS:2",
+            "treasury_official": "SUCCESS:1",
             "truth_search_index": "SUCCESS:22",
             "cnbc": "SUCCESS:3",
             "google_news_rss": "SUCCESS:99",
         },
         source_counts={
             "truth_official_timeline": 0,
+            "federal_register": 2,
+            "treasury_official": 1,
             "truth_search_index": 22,
             "cnbc": 3,
             "google_news_rss": 99,
@@ -59,7 +63,7 @@ def _result() -> RunResult:
 def test_source_health_contains_all_homepage_sources_and_counts():
     rows = build_source_health(_result())
     by_name = {row["來源"]: row for row in rows}
-    assert list(by_name) == ["Truth Official", "White House Official", "Truth Search", "Reuters", "AP", "Bloomberg", "CNBC", "Google RSS", "GDELT", "NewsAPI", "GNews"]
+    assert list(by_name) == ["Truth Official", "White House Official", "Federal Register", "U.S. Treasury", "Truth Search", "Reuters", "AP", "Bloomberg", "CNBC", "Google RSS", "GDELT", "NewsAPI", "GNews"]
     assert by_name["CNBC"]["筆數"] == 3
     assert by_name["Reuters"]["筆數"] == 1
     assert by_name["AP"]["筆數"] == 1
@@ -75,7 +79,7 @@ def test_source_health_distinguishes_failed_no_data_and_not_configured():
     assert by_name["Truth Search"]["覆蓋率"] == 100
     assert by_name["NewsAPI"]["state"] == "NOT_CONFIGURED"
     summary = source_health_summary(rows)
-    assert summary["success"] == 6
+    assert summary["success"] == 8
     assert summary["failed"] == 1
     assert summary["not_configured"] == 4
 

@@ -86,3 +86,10 @@ V2.3.8 is a corrective release based on the 2026-08-12 17:44 Streamlit Cloud run
 - `TRANSLATION_PROVIDER=AUTO`：若已設定 `AI_API_URL/AI_API_KEY/AI_MODEL`，優先使用相容 LLM；否則使用 Google Web translation best-effort。翻譯服務失敗不會改變事件聚類、重大性分數或英文原文。
 - 可用環境變數：`TRANSLATION_ENABLED`、`TRANSLATION_PROVIDER`、`TRANSLATION_API_URL`、`TRANSLATION_TIMEOUT_SECONDS`、`TRANSLATION_MAX_WORKERS`。
 - `GOOGLE_WEB_UNOFFICIAL` 為免金鑰 best-effort 路徑，服務可用性不保證；正式企業環境可設定 LLM endpoint。
+
+
+## V2.3.16 — 2026-08-25 12:36 Live root-cause fix
+- Live translation regressed to 0/101 because both Google Web and MyMemory public providers were throttled. Adds explicit Google → MyMemory → Lingva public three-stage failover, success-only provider evidence, and clearer failure status.
+- Adds Federal Register no-key API and U.S. Treasury official press-release pages as direct first-party sources to reduce Google RSS acquisition concentration.
+- GDELT timeout reduced for a 5-minute monitoring workload; persisted circuit/degraded behavior retained.
+- Truth rendered-browser layer is optional and disabled by default. Chromium/Playwright are removed from default deployment because Live logs show ~257 MB download / ~995 MB installed footprint while Truth still returns a Cloudflare challenge. Static HTML + manual review remain.
