@@ -1,0 +1,16 @@
+V2.3.14 modified/new files (GitHub CI Test-Isolation patch)
+
+.github/workflows/ci.yml                         MODIFIED - fail-fast false; translation network disabled by default in CI
+app/streamlit_app.py                             MODIFIED - APP_VERSION 2.3.14
+src/trump_monitor/engine.py                      MODIFIED - Rule/Prompt/Model version trace 2.3.14
+src/trump_monitor/translation.py                 MODIFIED - User-Agent/version trace 2.3.14; production logic preserved
+src/trump_monitor/collectors/gdelt.py            MODIFIED - User-Agent/version trace 2.3.14; production logic preserved
+src/trump_monitor/repository.py                  MODIFIED - explicit SQLite connection close to eliminate ResourceWarning/handle leak
+tests/conftest.py                               NEW - autouse isolation of translation cache/circuits/throttle; live translation disabled by default
+pyproject.toml                                   MODIFIED - version 2.3.14
+README.md                                        MODIFIED - CI root cause and deployment note
+CHANGELOG.md                                     MODIFIED - V2.3.14 change record
+docs/MODIFIED_FILES_V2.3.14.txt                  NEW
+docs/TEST_RESULTS_V2.3.14.txt                    NEW
+
+Note: .env.example is intentionally NOT included in GitHub OnlyUploadFiles for this patch.

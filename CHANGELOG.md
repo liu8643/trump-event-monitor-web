@@ -1,3 +1,11 @@
+## 2.3.14 - 2026-08-25
+- 修正 GitHub Actions #60：`test_translation_failure_not_persisted_in_memory_cache` 與 `test_google_batch_translation_reduces_requests` 在全套測試下因 translation circuit global state 洩漏而失敗。
+- 新增 `tests/conftest.py` autouse fixture：每個 test 前後清除 translation memory cache、Google/MyMemory circuit、request throttle timestamp。
+- CI 預設 `TRANSLATION_ENABLED=false` / fallback OFF，避免任何非翻譯專測誤打 public endpoint；翻譯專測自行 monkeypatch 開啟。
+- CI matrix 設 `fail-fast:false`，Python 3.11/3.14 無論其中一個失敗都完整執行，提升診斷性。
+- Production 翻譯 Circuit Breaker、MyMemory fallback、GDELT soft-limit、移民分類與重大性邏輯均保留不回退。
+- 修正 pytest/coverage 額外揭露的 SQLite ResourceWarning：repository 的 connection context 原先只 commit/rollback、不保證 close；改為明確 transactional close，避免長時間 Streamlit 歷史查詢累積連線handle。
+
 ## 2.3.13 - 2026-08-25
 - 以 11:04 Live Run 與可下載 Debug ZIP 做第三輪現場反查：103 unique translations 全失敗、GDELT HTTP200 非JSON解析失敗、Run耗時約6分32秒。
 - 翻譯新增Google 429 Circuit Breaker：第一次429即停止同provider後續批次，避免每批重試造成數分鐘延遲；AUTO無LLM時加入 MyMemory public fallback，Provider/Status明確保留。

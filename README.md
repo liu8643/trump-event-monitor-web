@@ -1,3 +1,7 @@
+## V2.3.14 GitHub CI Test-Isolation 修正版
+
+本版針對 GitHub Actions #60 的真實 CI 失敗（Python 3.11：62 passed / 2 failed）修正測試污染。V2.3.13 的翻譯 Circuit Breaker 是正確的 process-level production state，但舊 V2.3.11/V2.3.12 regression tests 未隔離 `_GOOGLE_BLOCKED_UNTIL` / `_MYMEMORY_BLOCKED_UNTIL` 等 volatile state，造成測試結果依賴執行順序：兩個失敗測試單獨執行皆 PASS，全套執行才 FAIL。V2.3.14 新增 autouse test fixture，在每個 pytest case 前後重置翻譯 runtime state，CI 預設禁止真實外網翻譯，翻譯專測則明確啟用並 mock HTTP；CI matrix 同時保留 3.11 與 3.14，並設定 fail-fast:false，確保兩個版本都跑完。Production 翻譯 Circuit Breaker / MyMemory fallback / GDELT / Materiality 邏輯不回退。
+
 ## V2.3.13 11:04 Live Run 三輪交互分析修正版
 
 本版直接由 TRUMP-RUN-20260825-110400 的 Excel、UI CSV、Debug ZIP 與 Streamlit Cloud Log 反查。V2.3.12 已成功修正重大性誤判、市場/產業聚合與Runtime翻譯KPI；但正式Run仍顯示 103/103 headline translation失敗，且翻譯階段耗時約6分11秒；GDELT則出現HTTP 200但內容非JSON。V2.3.13因此加入Google 429 Circuit Breaker + MyMemory public fallback、GDELT soft-rate-limit/non-JSON處理與cache降級，並新增移民／邊境政策分類。Public翻譯服務仍屬best-effort；正式企業環境仍建議設定AI_API_URL/API_KEY/MODEL。

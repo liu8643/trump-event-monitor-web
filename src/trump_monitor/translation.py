@@ -172,7 +172,7 @@ def _translate_google_web(text: str) -> TranslationResult:
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.13"})
+                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.14"})
                 status_code = int(getattr(r, "status_code", 200))
                 if status_code == 429:
                     _mark_google_blocked()
@@ -221,7 +221,7 @@ def _translate_google_web_batch(texts: list[str]) -> dict[str, TranslationResult
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.13"})
+                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.14"})
                 code = int(getattr(r, "status_code", 200))
                 if code == 429:
                     _mark_google_blocked()
@@ -307,7 +307,7 @@ def _translate_mymemory_batch(texts: list[str]) -> dict[str, TranslationResult]:
         params["de"] = email
     try:
         _throttle("TRANSLATION_MYMEMORY_RATE_LIMIT_SECONDS", "0.8")
-        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.13"})
+        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.14"})
         code = int(getattr(r, "status_code", 200))
         if code == 429:
             _mark_mymemory_blocked()

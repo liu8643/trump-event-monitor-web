@@ -1,0 +1,23 @@
+V2.3.14 validation - 2026-08-25
+
+GitHub Actions evidence supplied by user:
+- Run #60, Python 3.11: 62 passed / 2 failed
+- Failing tests:
+  tests/test_v2311_three_round.py::test_translation_failure_not_persisted_in_memory_cache
+  tests/test_v2312_live_regressions.py::test_google_batch_translation_reduces_requests
+- Both failing tests PASS when executed together in a fresh isolated process.
+- Root cause: order-dependent translation module state pollution from process-level provider circuit breakers.
+
+Post-fix local regression (available sandbox runtime Python 3.13.5):
+- pytest --cov=trump_monitor --cov-report=term-missing: 64 passed / 0 failed
+- Total coverage: 79%
+- Exact two GitHub failing tests: PASS
+- compileall src/app/scripts/tests: PASS
+- SAMPLE smoke: events=6 / status=SUCCESS / artifacts=7
+- SQLite ResourceWarning seen before repository fix: eliminated after explicit connection close
+- Full Release ZIP integrity: verified with unzip -t
+- OnlyUploadFiles ZIP integrity: verified with unzip -t
+
+Important verification boundary:
+- The build sandbox has Python 3.13.5 only. Python 3.11 and 3.14 post-fix execution must be confirmed by the next GitHub Actions matrix run.
+- ci.yml now uses fail-fast:false, so both 3.11 and 3.14 jobs will finish and provide complete evidence.

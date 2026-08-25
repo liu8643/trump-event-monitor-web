@@ -22,7 +22,7 @@ class GdeltDocAdapter(SourceAdapter):
     """No-key GDELT DOC discovery source returning direct publisher URLs.
 
     The public endpoint can reply with a rate-limit/plain-text message even when
-    HTTP status is 200.  V2.3.13 treats that as a soft rate limit, retries with
+    HTTP status is 200.  V2.3.14 treats that as a soft rate limit, retries with
     the required spacing, and then falls back to clearly labeled recent cache.
     """
 
@@ -124,7 +124,7 @@ class GdeltDocAdapter(SourceAdapter):
         last_error = ""
         for attempt in range(attempts):
             try:
-                r = requests.get(self.endpoint, params=params, timeout=self.timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.13"})
+                r = requests.get(self.endpoint, params=params, timeout=self.timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.14"})
             except requests.RequestException as exc:
                 last_error = f"GDELT 連線失敗: {type(exc).__name__}"
                 if attempt + 1 < attempts:

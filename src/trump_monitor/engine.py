@@ -156,7 +156,7 @@ class TrumpEventEngine:
             truth_status="NO_POSTS_IN_WINDOW"
         result=RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.13",prompt_version="TRUMP_PROMPT_V2.3.13",model_version="V2313_LIVE_1104_TRANSLATION_FAILOVER_GDELT_SOFTLIMIT_TAXONOMY_V2.3.13",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.3.14",prompt_version="TRUMP_PROMPT_V2.3.14",model_version="V2314_CI_TEST_ISOLATION_V2.3.14",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])
         logger.info("run complete | run_id=%s | status=%s | events=%d | material=%d | warnings=%d", result.run_id, result.status, len(events), sum(e.is_material for e in events), len(warnings))
