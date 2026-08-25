@@ -39,6 +39,25 @@ def contains_cjk(text: str) -> bool:
     return bool(_CJK_RE.search(text or ""))
 
 
+def normalize_zh_tw(text: str) -> str:
+    """Conservative Taiwan-facing terminology normalization.
+
+    Public fallback providers can return valid Traditional Chinese while still
+    using non-Taiwan political naming (for example 特朗普).  Keep this mapping
+    deliberately narrow so it never rewrites publisher names, tickers, numbers,
+    or the English evidence layer.
+    """
+    value = html.unescape((text or "").strip())
+    replacements = {
+        "特朗普": "川普",
+        "唐納德·特朗普": "唐納·川普",
+        "唐納德特朗普": "唐納·川普",
+    }
+    for src, dst in replacements.items():
+        value = value.replace(src, dst)
+    return value
+
+
 def _enabled() -> bool:
     return os.getenv("TRANSLATION_ENABLED", "true").strip().lower() not in {"0", "false", "no", "off"}
 
@@ -113,7 +132,7 @@ def _throttle(delay_env: str = "TRANSLATION_RATE_LIMIT_SECONDS", default: str = 
 
 
 def _validate_translation(text: str, translated: str, provider: str) -> TranslationResult:
-    clean = html.unescape((translated or "").strip())
+    clean = normalize_zh_tw(translated)
     if not clean:
         return TranslationResult("", provider, "EMPTY")
     if not contains_cjk(text) and not contains_cjk(clean):
@@ -172,7 +191,7 @@ def _translate_google_web(text: str) -> TranslationResult:
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.14"})
+                r = requests.get(endpoint, params={"client": "gtx", "sl": "auto", "tl": "zh-TW", "dt": "t", "q": text}, timeout=timeout, headers={"User-Agent": "Mozilla/5.0 TrumpEventMonitor/2.3.15"})
                 status_code = int(getattr(r, "status_code", 200))
                 if status_code == 429:
                     _mark_google_blocked()
@@ -221,7 +240,7 @@ def _translate_google_web_batch(texts: list[str]) -> dict[str, TranslationResult
         for endpoint in endpoints:
             try:
                 _throttle()
-                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.14"})
+                r = requests.get(endpoint, params={"client":"gtx","sl":"auto","tl":"zh-TW","dt":"t","q":joined}, timeout=timeout, headers={"User-Agent":"Mozilla/5.0 TrumpEventMonitor/2.3.15"})
                 code = int(getattr(r, "status_code", 200))
                 if code == 429:
                     _mark_google_blocked()
@@ -307,7 +326,7 @@ def _translate_mymemory_batch(texts: list[str]) -> dict[str, TranslationResult]:
         params["de"] = email
     try:
         _throttle("TRANSLATION_MYMEMORY_RATE_LIMIT_SECONDS", "0.8")
-        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.14"})
+        r = requests.get(endpoint, params=params, timeout=float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "12")), headers={"User-Agent":"TrumpEventMonitor/2.3.15"})
         code = int(getattr(r, "status_code", 200))
         if code == 429:
             _mark_mymemory_blocked()
@@ -472,5 +491,6 @@ def translate_many(texts: Iterable[str], max_workers: int | None = None) -> dict
     provider_counts: dict[str, int] = {}
     for r in results.values():
         provider_counts[r.provider] = provider_counts.get(r.provider, 0) + 1
-    logger.info("translation batch | requested=%d | success=%d | failed=%d | provider=%s | providers=%s | elapsed=%.2fs", len(unique), success, failed, provider, provider_counts, time.monotonic()-started)
+    effective = ",".join(f"{k}:{v}" for k,v in sorted(provider_counts.items())) or "NONE"
+    logger.info("translation batch | requested=%d | success=%d | failed=%d | primary_provider=%s | effective_providers=%s | elapsed=%.2fs", len(unique), success, failed, provider, effective, time.monotonic()-started)
     return results

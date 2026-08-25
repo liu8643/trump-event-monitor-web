@@ -1,0 +1,31 @@
+V2.3.15 validation - 2026-08-25
+
+Live evidence basis:
+- TRUMP-RUN-20260825-115155 Excel report
+- 2026-08-25T04-04_export.csv
+- debug_logs_TRUMP-RUN-20260825-115155_20260825-040423.zip
+- V2.3.14 GitHub OnlyUploadFiles + same-version full release dependency baseline
+
+Live observations:
+- raw=107; unique=103; clusters=70; material=1; status=PARTIAL
+- translation: requested=103; success=103; failed=0; effective provider MYMEMORY_PUBLIC; elapsed=29.41s
+- GDELT: HTTP 429 after long adapter delay; no cache available
+- White House: SUCCESS:3
+- Truth Official: ACCESS_DENIED Cloudflare, correctly degraded
+
+Post-fix regression:
+- pytest: 71 passed / 0 failed
+- coverage: 79%
+- compileall src/app/scripts/tests: PASS
+- SAMPLE smoke: events=6 / status=SUCCESS / artifacts=7
+- Canada 50% auto-tariff replay: 10 related source rows -> 1 cluster; materiality=76 RED
+- GDELT persisted-circuit regression: first 429 -> degraded/circuit; next run -> 0 new HTTP calls
+- Iran formal sanctions materiality regression: PASS >=65
+- Supreme Court mail-voting ruling materiality regression: PASS >=65
+- Context penalty dominant-cluster regression: PASS
+- Hormuz deterministic-specific category preservation regression: PASS
+- Taiwan translation terminology normalization regression: PASS
+
+Validation boundary:
+- Build sandbox Python is 3.13.5. GitHub 3.11/3.14 matrix remains the authoritative post-upload environment validation.
+- Public GDELT/translation external services are not claimed as live-successful from the build sandbox; changes are deterministic regression-tested against the user's real Live failure evidence.

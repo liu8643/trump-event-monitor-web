@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+import time
 
 from trump_monitor.classifier import classify_category, classify_source_type
 from trump_monitor.clustering import cluster_items
@@ -28,10 +29,12 @@ class TrumpEventEngine:
         if started.tzinfo is None: started=started.replace(tzinfo=timezone.utc)
         start=started-timedelta(hours=self.config.lookback_hours)
         logger.info("run start | mode=%s | lookback=%sh | adapters=%s", self.config.mode, self.config.lookback_hours, [a.name for a in self.adapters])
-        raw=[]; source_status={}; source_counts={}; source_observations=[]; warnings=[]
+        raw=[]; source_status={}; source_counts={}; source_latency_seconds={}; source_observations=[]; warnings=[]
         for adapter in self.adapters:
+            adapter_started=time.monotonic()
             try:
                 rows=adapter.collect(start,started); raw.extend(rows); source_counts[adapter.name]=len(rows)
+                source_latency_seconds[adapter.name]=round(time.monotonic()-adapter_started,3)
                 adapter_state=getattr(adapter,"last_status","")
                 source_status[adapter.name]=adapter_state or (f"SUCCESS:{len(rows)}" if rows else "NO_DATA:0")
                 observations=getattr(adapter,"last_observations",[]) or []
@@ -44,6 +47,7 @@ class TrumpEventEngine:
                     logger.warning("source degraded | %s | state=%s", adapter.name, adapter_state)
             except Exception as exc:
                 source_counts[adapter.name]=0
+                source_latency_seconds[adapter.name]=round(time.monotonic()-adapter_started,3)
                 detail=" ".join(str(exc).split())[:180] or type(exc).__name__
                 source_status[adapter.name]=f"FAILED:{type(exc).__name__}:{detail}"
                 warnings.append(f"{adapter.name}: {detail}")
@@ -84,6 +88,11 @@ class TrumpEventEngine:
             deterministic=classify_category(item)
             if deterministic in {"醫療／社會政策", "總統安全／國安", "法律／監管／倫理", "移民／邊境政策"}:
                 category=deterministic
+            elif deterministic != "其他／一般政治" and (not ai.category or ai.category == "其他／一般政治"):
+                # A specific deterministic match (e.g. Hormuz) must not be erased by
+                # a generic Rule/LLM fallback classification.
+                category=deterministic
+                logger.debug("category fallback preserved | item=%s | deterministic=%s | ai=%s", item.raw_item_id, deterministic, ai.category)
             else:
                 category=ai.category or deterministic
             categories[item.raw_item_id]=category
@@ -156,8 +165,8 @@ class TrumpEventEngine:
             truth_status="NO_POSTS_IN_WINDOW"
         result=RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.14",prompt_version="TRUMP_PROMPT_V2.3.14",model_version="V2314_CI_TEST_ISOLATION_V2.3.14",schema_version=self.config.schema_version,
-            source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
+            rule_version="TRUMP_RULE_V2.3.15",prompt_version="TRUMP_PROMPT_V2.3.15",model_version="V2315_LIVE1151_GDELT_CIRCUIT_CLUSTERING_MATERIALITY_V2.3.15",schema_version=self.config.schema_version,
+            source_status=source_status,source_counts=source_counts,source_latency_seconds=source_latency_seconds,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])
         logger.info("run complete | run_id=%s | status=%s | events=%d | material=%d | warnings=%d", result.run_id, result.status, len(events), sum(e.is_material for e in events), len(warnings))
         return result

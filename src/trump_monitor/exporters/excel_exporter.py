@@ -106,7 +106,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     for sec, rows in sectors.items():
         raw_score=sum(v for _,v in rows)
         score=max(-5,min(5,round(raw_score,2)))
-        direction="偏多" if score>=1.5 else "偏空" if score<=-1.5 else "中性"
+        direction="偏多" if score>=1.5 else "微幅偏多" if score>=0.5 else "偏空" if score<=-1.5 else "微幅偏空" if score<=-0.5 else "中性"
         top=max(rows,key=lambda x:(x[0].materiality_score,abs(x[1])))[0]
         conf=sum(e.score.confidence*abs(v) for e,v in rows)/(sum(abs(v) for _,v in rows) or 1)
         gate="BLOCKED_SAMPLE" if top.data_freshness!="CURRENT" else "WATCH_ONLY"
@@ -127,7 +127,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     _style_title(ws6,7,"報表方法、版本、判定規則與限制")
     _header(ws6,3,["項目","本報表設定","正式程式規則","風險","控制方式","驗收","備註"])
     rows=[
-        ["Run Metadata",result.run_id,"每次唯一run_id","樣本誤認即時","明確狀態","run_id不可空",""],
+        ["Run Metadata",result.run_id,"每次唯一run_id","樣本誤認即時","明確狀態","run_id不可空",f"總執行時間={(result.completed_at-result.started_at).total_seconds():.1f}s"],
         ["版本",f"{result.rule_version}; {result.prompt_version}; {result.model_version}; {result.schema_version}","版本必填","無法重跑","寫入所有輸出","版本齊全",""],
         ["時間窗",f"最近{result.lookback_hours}小時","UTC儲存/台北顯示","時區誤差","統一時區","邊界測試",""],
         ["來源優先順序"," → ".join(result.source_priority),"Truth第一手、主流媒體驗證、聚合補充","來源缺口","逐來源狀態與筆數","優先順序可見",""],
@@ -166,12 +166,12 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     _body(ws8,4,13,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
 
     ws9 = wb.create_sheet("09_來源健康")
-    _style_title(ws9,7,"來源執行狀態與筆數｜Publisher身分與取得通道分離")
-    _header(ws9,3,["來源鍵","狀態","筆數","來源定位","覆蓋率","角色","詳細狀態"])
+    _style_title(ws9,8,"來源執行狀態與筆數｜Publisher身分與取得通道分離｜含Adapter耗時")
+    _header(ws9,3,["來源鍵","狀態","筆數","來源定位","覆蓋率","角色","詳細狀態","耗時秒"])
     health_rows=build_source_health(result)
     for row in health_rows:
-        ws9.append([row["source_key"],row["狀態"],row["筆數"],row["來源"],row["覆蓋率"],row["角色"],row["詳細狀態"]])
-    _body(ws9,4,3+len(health_rows),7); _widths(ws9,{1:28,2:18,3:12,4:34,5:12,6:46,7:70}); ws9.freeze_panes="A4"
+        ws9.append([row["source_key"],row["狀態"],row["筆數"],row["來源"],row["覆蓋率"],row["角色"],row["詳細狀態"],row.get("耗時秒",0)])
+    _body(ws9,4,3+len(health_rows),8); _widths(ws9,{1:28,2:18,3:12,4:34,5:12,6:46,7:70,8:14}); ws9.freeze_panes="A4"
 
     if result.source_observations:
         start_row=6+len(health_rows)

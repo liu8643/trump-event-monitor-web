@@ -108,6 +108,7 @@ class RunResult(BaseModel):
     schema_version: str
     source_status: dict[str, str]
     source_counts: dict[str, int] = Field(default_factory=dict)
+    source_latency_seconds: dict[str, float] = Field(default_factory=dict)
     source_observations: list[SourceObservation] = Field(default_factory=list)
     source_priority: list[str] = Field(default_factory=list)
     data_mode: Literal["ONLINE", "SAMPLE"] = "ONLINE"

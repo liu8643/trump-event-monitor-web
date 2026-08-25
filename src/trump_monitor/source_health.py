@@ -90,6 +90,7 @@ def build_source_health(result: RunResult) -> list[dict[str, Any]]:
             "覆蓋率": coverage,
             "角色": role,
             "詳細狀態": raw_status,
+            "耗時秒": round(float(result.source_latency_seconds.get(key, 0.0)), 3) if not key.startswith("publisher:") else 0.0,
         })
     return rows
 

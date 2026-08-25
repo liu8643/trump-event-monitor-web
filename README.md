@@ -1,3 +1,11 @@
+## V2.3.15 11:51 Live Evidence 修正版
+
+本版直接依 `TRUMP-RUN-20260825-115155` 的 Live Excel + UI CSV + Debug ZIP 進行三輪交互分析。V2.3.14 已證明翻譯 Circuit Fallback 成功：103/103 標題由 `MYMEMORY_PUBLIC` 取得繁中，翻譯耗時約 29.4 秒；本版保留該能力並新增台灣用語正規化（`特朗普` → `川普`）。新發現的主要瓶頸是 GDELT：公開端點仍回 HTTP 429，單一 Adapter 讓 Live Run 額外耗時約 52 秒。因此 V2.3.15 將公開 rate limit 視為可預期的 degraded state，預設單次嘗試後開啟持久化 30 分鐘 Circuit，後續 Run 直接使用時間窗內 Cache 或快速標示 `DEGRADED:CIRCUIT_OPEN_NO_CACHE`，不再每五分鐘重複產生 Error traceback 與長時間等待。
+
+11:51 報告也證實同一個「加拿大 50% 汽車關稅」政策行動仍被拆成多個事件群（CNBC/BBC/PBS、Reuters、Washington Post/Guardian/Politico）。本版新增窄事件家族 `CANADA_50_AUTO_TARIFF_ACTION`，避免同一政策公告重複計算。Materiality 同步增加正式制裁行動與最高法院選舉制度裁決的語意嚴重度，並修正 context penalty：單一 Opinion 不得拖低整個多來源正式政策事件。
+
+另修正分類融合：當 Rule/LLM 只回 `其他／一般政治`，但 deterministic classifier 已辨識出更精確類別（例如 Hormuz → 地緣政治／能源），不得再被 generic AI 結果覆蓋。09_來源健康新增每個 Adapter 的實際耗時秒數，讓 GDELT/Truth 等慢來源可直接從報表判讀，不必只靠 Debug Log。
+
 ## V2.3.14 GitHub CI Test-Isolation 修正版
 
 本版針對 GitHub Actions #60 的真實 CI 失敗（Python 3.11：62 passed / 2 failed）修正測試污染。V2.3.13 的翻譯 Circuit Breaker 是正確的 process-level production state，但舊 V2.3.11/V2.3.12 regression tests 未隔離 `_GOOGLE_BLOCKED_UNTIL` / `_MYMEMORY_BLOCKED_UNTIL` 等 volatile state，造成測試結果依賴執行順序：兩個失敗測試單獨執行皆 PASS，全套執行才 FAIL。V2.3.14 新增 autouse test fixture，在每個 pytest case 前後重置翻譯 runtime state，CI 預設禁止真實外網翻譯，翻譯專測則明確啟用並 mock HTTP；CI matrix 同時保留 3.11 與 3.14，並設定 fail-fast:false，確保兩個版本都跑完。Production 翻譯 Circuit Breaker / MyMemory fallback / GDELT / Materiality 邏輯不回退。

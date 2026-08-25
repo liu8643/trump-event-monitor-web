@@ -1,3 +1,13 @@
+## 2.3.15 - 2026-08-25
+- 依 11:51 Live Run（TRUMP-RUN-20260825-115155）做三輪交互分析。
+- 翻譯：確認 Google 429 Circuit → MyMemory fallback 103/103 成功；新增 Taiwan terminology normalization（特朗普→川普），修正 runtime log 的 primary/effective provider 語意。
+- GDELT：公開 429 改為持久化 Circuit/快速 degraded fallback；預設 GDELT_RETRIES=1，避免每次 Run 約 52 秒等待；有窗內 cache 時使用明確 CACHE acquisition。
+- 事件聚類：新增 CANADA_50_AUTO_TARIFF_ACTION，合併同一加拿大 50% 汽車關稅政策公告的跨媒體碎裂群。
+- Materiality：正式 anti-Iran sanctions action +8；Supreme Court/mail-voting election ruling +12；context penalty 改為 cluster-dominant 才套用。
+- 分類融合：specific deterministic category 不再被 generic AI `其他／一般政治` 覆蓋。
+- Source Health：新增 Adapter 耗時秒數；方法頁新增總執行時間。
+- 新增 V2.3.15 Live regression tests；完整 pytest/compile/smoke 驗證。
+
 ## 2.3.14 - 2026-08-25
 - 修正 GitHub Actions #60：`test_translation_failure_not_persisted_in_memory_cache` 與 `test_google_batch_translation_reduces_requests` 在全套測試下因 translation circuit global state 洩漏而失敗。
 - 新增 `tests/conftest.py` autouse fixture：每個 test 前後清除 translation memory cache、Google/MyMemory circuit、request throttle timestamp。

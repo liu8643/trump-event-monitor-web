@@ -1,0 +1,17 @@
+V2.3.15 modified/new files - 11:51 Live Evidence three-round analysis
+
+app/streamlit_app.py                              MODIFIED - APP_VERSION 2.3.15
+src/trump_monitor/models.py                       MODIFIED - source_latency_seconds runtime evidence
+src/trump_monitor/engine.py                       MODIFIED - category fusion, adapter latency, V2.3.15 trace
+src/trump_monitor/translation.py                  MODIFIED - Taiwan terminology normalization, provider log semantics, V2.3.15 UA
+src/trump_monitor/collectors/gdelt.py             MODIFIED - persisted rate-limit circuit, fast degraded/cache fallback, V2.3.15 UA
+src/trump_monitor/clustering.py                    MODIFIED - Canada 50% auto-tariff event family + family-seed expansion
+src/trump_monitor/materiality.py                   MODIFIED - sanctions/Supreme Court semantic severity; cluster-dominant context penalty
+src/trump_monitor/source_health.py                 MODIFIED - adapter latency evidence
+src/trump_monitor/exporters/excel_exporter.py      MODIFIED - source latency, run duration, nuanced sector direction
+pyproject.toml                                    MODIFIED - version 2.3.15
+README.md                                         MODIFIED - V2.3.15 Live root cause and behavior
+CHANGELOG.md                                      MODIFIED - V2.3.15 change record
+tests/test_v2315_live_regressions.py              NEW - 7 Live regression tests
+docs/MODIFIED_FILES_V2.3.15.txt                   NEW
+docs/TEST_RESULTS_V2.3.15.txt                     NEW

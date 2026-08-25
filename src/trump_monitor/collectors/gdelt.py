@@ -22,7 +22,7 @@ class GdeltDocAdapter(SourceAdapter):
     """No-key GDELT DOC discovery source returning direct publisher URLs.
 
     The public endpoint can reply with a rate-limit/plain-text message even when
-    HTTP status is 200.  V2.3.14 treats that as a soft rate limit, retries with
+    HTTP status is 200.  V2.3.15 treats rate limiting as a persisted degraded-source circuit, with
     the required spacing, and then falls back to clearly labeled recent cache.
     """
 
@@ -61,6 +61,43 @@ class GdeltDocAdapter(SourceAdapter):
 
     def _cache_path(self) -> Path:
         return Path(os.getenv("GDELT_CACHE_PATH", "output/gdelt_articles_cache.json"))
+
+    def _state_path(self) -> Path:
+        configured=os.getenv("GDELT_STATE_PATH","").strip()
+        if configured:
+            return Path(configured)
+        cache=self._cache_path()
+        return cache.with_name("gdelt_runtime_state.json")
+
+    def _circuit_state(self) -> tuple[datetime | None, str]:
+        try:
+            p=self._state_path()
+            if not p.exists(): return None, ""
+            data=json.loads(p.read_text(encoding="utf-8"))
+            raw=str(data.get("blocked_until") or "") if isinstance(data,dict) else ""
+            reason=str(data.get("reason") or "") if isinstance(data,dict) else ""
+            if not raw: return None, reason
+            dt=datetime.fromisoformat(raw.replace("Z","+00:00"))
+            if dt.tzinfo is None: dt=dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc), reason
+        except Exception:
+            return None, ""
+
+    def _mark_circuit(self, reason: str) -> None:
+        seconds=max(60.0,float(os.getenv("GDELT_CIRCUIT_SECONDS","1800")))
+        until=datetime.now(timezone.utc).timestamp()+seconds
+        dt=datetime.fromtimestamp(until,tz=timezone.utc)
+        try:
+            p=self._state_path(); p.parent.mkdir(parents=True,exist_ok=True)
+            tmp=p.with_suffix(p.suffix+".tmp")
+            tmp.write_text(json.dumps({"blocked_until":dt.isoformat(),"reason":reason[:240]},ensure_ascii=False),encoding="utf-8")
+            tmp.replace(p)
+        except Exception as exc:
+            logger.warning("gdelt circuit persist failed | %s", type(exc).__name__)
+
+    def _circuit_open(self) -> tuple[bool, str]:
+        until, reason=self._circuit_state()
+        return (bool(until and until>datetime.now(timezone.utc)), reason)
 
     def _load_cached_articles(self) -> list[dict]:
         try:
@@ -113,18 +150,36 @@ class GdeltDocAdapter(SourceAdapter):
             return cached_rows
         raise SourceError(last_error or "GDELT 無可用資料")
 
+    def _cached_or_degraded(self, start: datetime, end: datetime, reason: str) -> list[RawItem]:
+        """Expected public rate limiting is a degraded source state, not a crash.
+
+        This keeps the run fast and preserves PARTIAL/source-health evidence without
+        writing a traceback to error.log on every five-minute refresh.
+        """
+        cached_rows=self._rows_from_articles(self._load_cached_articles(),start,end,cached=True)
+        if cached_rows:
+            self.last_status=f"SUCCESS_CACHE_CIRCUIT:{len(cached_rows)};LIVE_ERROR={reason[:120]}"
+            logger.warning("gdelt circuit/cache fallback | rows=%d | reason=%s",len(cached_rows),reason[:160])
+            return cached_rows
+        self.last_status=f"DEGRADED:CIRCUIT_OPEN_NO_CACHE:{reason[:140]}"
+        logger.warning("gdelt circuit open without cache | reason=%s",reason[:180])
+        return []
+
     def collect(self, start: datetime, end: datetime) -> list[RawItem]:
+        blocked, blocked_reason=self._circuit_open()
+        if blocked:
+            return self._cached_or_degraded(start,end,f"PERSISTED_CIRCUIT:{blocked_reason or 'RATE_LIMIT'}")
         params = {
             "query": self.query, "mode":"ArtList", "format":"json", "maxrecords":self.max_records,
             "startdatetime": start.astimezone(timezone.utc).strftime("%Y%m%d%H%M%S"),
             "enddatetime": end.astimezone(timezone.utc).strftime("%Y%m%d%H%M%S"), "sort":"DateDesc",
         }
-        attempts = max(1, int(os.getenv("GDELT_RETRIES", "3")))
+        attempts = max(1, int(os.getenv("GDELT_RETRIES", "1")))
         min_gap = max(5.2, float(os.getenv("GDELT_RETRY_SECONDS", "5.5")))
         last_error = ""
         for attempt in range(attempts):
             try:
-                r = requests.get(self.endpoint, params=params, timeout=self.timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.14"})
+                r = requests.get(self.endpoint, params=params, timeout=self.timeout, headers={"User-Agent":"TrumpEventMonitor/2.3.15"})
             except requests.RequestException as exc:
                 last_error = f"GDELT 連線失敗: {type(exc).__name__}"
                 if attempt + 1 < attempts:
@@ -146,6 +201,9 @@ class GdeltDocAdapter(SourceAdapter):
                     if attempt + 1 < attempts:
                         time.sleep(min_gap * (attempt + 1))
                         continue
+                    if self._looks_rate_limited(body_preview):
+                        self._mark_circuit(last_error)
+                        return self._cached_or_degraded(start,end,last_error)
                     return self._cached_or_raise(start, end, last_error)
                 articles = payload.get("articles", []) if isinstance(payload, dict) else []
                 if not isinstance(articles, list):
@@ -159,14 +217,17 @@ class GdeltDocAdapter(SourceAdapter):
                 return self._rows_from_articles(articles, start, end, cached=False)
 
             last_error = f"GDELT HTTP {r.status_code}: {body_preview}"
-            if r.status_code == 429 and attempt + 1 < attempts:
-                retry_after = r.headers.get("Retry-After", "")
-                try:
-                    wait = max(min_gap, float(retry_after)) if retry_after else min_gap * (attempt + 1)
-                except ValueError:
-                    wait = min_gap * (attempt + 1)
-                time.sleep(min(wait, 30.0))
-                continue
+            if r.status_code == 429:
+                if attempt + 1 < attempts:
+                    retry_after = r.headers.get("Retry-After", "")
+                    try:
+                        wait = max(min_gap, float(retry_after)) if retry_after else min_gap * (attempt + 1)
+                    except ValueError:
+                        wait = min_gap * (attempt + 1)
+                    time.sleep(min(wait, 30.0))
+                    continue
+                self._mark_circuit(last_error)
+                return self._cached_or_degraded(start,end,last_error)
             if 500 <= r.status_code < 600 and attempt + 1 < attempts:
                 time.sleep(min_gap)
                 continue
