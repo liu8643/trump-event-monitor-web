@@ -1,0 +1,28 @@
+V2.3.13 verification summary
+Date: 2026-08-25
+Live evidence baseline: TRUMP-RUN-20260825-110400
+
+Three-round live findings addressed:
+1. Translation: 103 requested / 0 success / 103 failed in V2.3.12; Google Web HTTP 429 and translation phase consumed ~6m11s.
+   Fix: first Google 429 opens a circuit breaker; remaining Google batches are skipped; optional MyMemory public fallback is attempted and all providers/statuses remain auditable.
+2. GDELT: V2.3.12 raised JSON parse error on HTTP 200 non-JSON response.
+   Fix: HTTP 200 plain-text/rate-limit responses are treated as soft failures, retried with >=5.2s gap, then recent in-window cache may be used with explicit CACHE acquisition label.
+3. Taxonomy: live report classified a deportation/immigration story as trade and H-1B fee story as generic politics.
+   Fix: added Immigration / Border Policy deterministic category.
+4. Version traceability: V2.3.12 report model_version still carried V2311 prefix.
+   Fix: V2.3.13 model_version is internally consistent.
+
+Regression verification:
+- pytest: 64 collected / 64 passed / 0 failed (TRANSLATION_ENABLED=false globally; translation unit tests explicitly enable mocked providers)
+- compileall: PASS (src/app/scripts/tests)
+- SAMPLE smoke: PASS; events=6; status=SUCCESS; artifacts=7
+- Google 429 circuit -> one Google attempt then fallback: PASS (mock)
+- MyMemory fallback batch parse: PASS (mock)
+- GDELT HTTP200 soft-rate-limit retry: PASS (mock)
+- GDELT HTTP200 non-JSON -> cached direct URL fallback: PASS (mock)
+- deportation/immigration classification: PASS
+- H-1B classification: PASS
+
+Live evidence limitations:
+- This build sandbox does not claim successful live calls to Google Web, MyMemory, or GDELT.
+- Public translation providers are best-effort. For production-grade Chinese coverage, configure AI_API_URL / AI_API_KEY / AI_MODEL.

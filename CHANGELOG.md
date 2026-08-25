@@ -1,3 +1,11 @@
+## 2.3.13 - 2026-08-25
+- 以 11:04 Live Run 與可下載 Debug ZIP 做第三輪現場反查：103 unique translations 全失敗、GDELT HTTP200 非JSON解析失敗、Run耗時約6分32秒。
+- 翻譯新增Google 429 Circuit Breaker：第一次429即停止同provider後續批次，避免每批重試造成數分鐘延遲；AUTO無LLM時加入 MyMemory public fallback，Provider/Status明確保留。
+- GDELT 對 HTTP200/plain-text rate-limit 或非JSON回應不再直接JSON解析例外；依>=5.2秒重試，最終可使用72h窗內明確標示的cache。
+- 新增「移民／邊境政策」分類與deterministic guard，修正實際報告中deported/immigration與H-1B新聞被落入錯誤/一般類別。
+- 修正 model_version 仍殘留 V2311 前綴的版本追溯錯誤，統一為 V2.3.13。
+- 08功能頁新增翻譯Provider實況，讓中文覆蓋率與實際fallback provider可稽核。
+
 ## 2.3.12 - 2026-08-25
 - 以 09:34 Live Run 重新三輪交互分析：68 events / 3 material、White House 3筆成功、GDELT HTTP 429、中文翻譯全數 HTTP 429。
 - Google Web 翻譯改成小批次 marker 翻譯，將每標題一請求降為每批一請求；保留成功才cache與跨Run persistent cache。

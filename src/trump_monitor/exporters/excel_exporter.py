@@ -133,7 +133,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
         ["來源優先順序"," → ".join(result.source_priority),"Truth第一手、主流媒體驗證、聚合補充","來源缺口","逐來源狀態與筆數","優先順序可見",""],
         ["資料來源",str(result.source_status),"多Adapter","來源失效","降級與警告","來源缺口可見",str(result.source_counts)],
         ["Truth Social",result.truth_social_status,"授權API/人工匯入/搜尋索引","未取得第一手貼文","明確狀態且不以Sample替代","狀態可見",""],
-        ["雙語翻譯","English原文永久保留；繁中欄位另存","翻譯不參與去重/聚類/重大性評分","外部翻譯服務可能暫時失效","失敗時顯示翻譯未取得，不覆蓋英文原文","雙語欄位可追溯","TRANSLATION_PROVIDER=AUTO/LLM/GOOGLE_WEB"],
+        ["雙語翻譯","English原文永久保留；繁中欄位另存","翻譯不參與去重/聚類/重大性評分","外部翻譯服務可能暫時失效","失敗時顯示翻譯未取得，不覆蓋英文原文","雙語欄位可追溯","AUTO：有LLM即LLM；無LLM時GOOGLE_WEB→MYMEMORY public fallback；皆為best-effort"],
         ["市場分數","Rule 70%＋AI 30%","AI失敗Rule-only","不是價格預測","信心與期間","可拆解",""],
         ["投資限制","事件情報用途","不得單獨下單","快速反轉","人工確認","不產直接買點",""],
     ]
@@ -159,10 +159,11 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
       ["GTC WatchList","JSON/CSV review-required輸出","未直接寫外部GTC DB","REVIEW_REQUIRED","PASS"],
       ["Word/PDF","一鍵下載","PDF字型依部署環境","fallback字型","PASS"],
       ["每5分鐘更新","頁面開啟自動刷新＋GitHub排程","Cloud sleep/GitHub cron可能延遲","best effort","PASS"],
-      ["中英文同步","英文原文＋繁中翻譯欄位；UI/Excel/Word/PDF/HTML/JSON共用","AUTO預設LLM或Google Web best-effort；外部服務可能失效","翻譯失敗不影響英文原文與事件判斷", (lambda total,zh: "PASS" if total and zh/total>=0.8 else f"DEGRADED:{zh}/{total}" if total else "NO_DATA")(sum(len(e.sources) for e in result.events),sum(1 for e in result.events for x in e.sources if x.title_zh))],
+      ["中英文同步","英文原文＋繁中翻譯欄位；UI/Excel/Word/PDF/HTML/JSON共用","AUTO優先LLM；無LLM時Google Web，遇429立即Circuit Break並改用MyMemory public fallback","翻譯失敗不影響英文原文與事件判斷", (lambda total,zh: "PASS" if total and zh/total>=0.8 else f"DEGRADED:{zh}/{total}" if total else "NO_DATA")(sum(len(e.sources) for e in result.events),sum(1 for e in result.events for x in e.sources if x.title_zh))],
+      ["翻譯Provider實況","、".join(f"{k}:{v}" for k,v in sorted(__import__("collections").Counter((x.translation_provider or "NONE") for e in result.events for x in e.sources).items())),"Public provider無企業SLA，建議正式環境設定AI_API_URL/API_KEY/MODEL","來源欄保留provider/status；不可把fallback冒充LLM","TRACEABLE"],
       ["歷史資料庫","run/event/source/impact/watchlist SQLite","Streamlit本機磁碟非永久","建議外接PostgreSQL/S3","PASS"],
     ]: ws8.append(r)
-    _body(ws8,4,12,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
+    _body(ws8,4,13,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
 
     ws9 = wb.create_sheet("09_來源健康")
     _style_title(ws9,7,"來源執行狀態與筆數｜Publisher身分與取得通道分離")

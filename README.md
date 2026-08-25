@@ -1,3 +1,7 @@
+## V2.3.13 11:04 Live Run 三輪交互分析修正版
+
+本版直接由 TRUMP-RUN-20260825-110400 的 Excel、UI CSV、Debug ZIP 與 Streamlit Cloud Log 反查。V2.3.12 已成功修正重大性誤判、市場/產業聚合與Runtime翻譯KPI；但正式Run仍顯示 103/103 headline translation失敗，且翻譯階段耗時約6分11秒；GDELT則出現HTTP 200但內容非JSON。V2.3.13因此加入Google 429 Circuit Breaker + MyMemory public fallback、GDELT soft-rate-limit/non-JSON處理與cache降級，並新增移民／邊境政策分類。Public翻譯服務仍屬best-effort；正式企業環境仍建議設定AI_API_URL/API_KEY/MODEL。
+
 ## V2.3.12 09:34 Live Run 三輪交互分析修正版
 
 本版直接由 V2.3.11 Live 輸出反查：White House 直連已成功，但 GDELT 遭 HTTP 429；Google Web 翻譯亦遭 HTTP 429，造成 68 個事件中文欄全空。V2.3.12 將翻譯改為批次請求、GDELT加入5秒以上重試與明確cache降級，並修正市場/產業彙總不應被一般WATCH事件平均或覆寫。

@@ -13,6 +13,7 @@ class AIAnalysis:
     summary_status: str
 
 KEYWORDS={
+    "移民／邊境政策": [r"\bimmigration\b",r"\bdeport(?:ed|ation|ations)?\b",r"\bborder\b",r"\basylum\b",r"\bice\b",r"\bvisa(s)?\b",r"\bh-?1b\b"],
     "法律／監管／倫理": [r"\bfinancial disclosure\b",r"\bholdings?\b",r"\bstocks? gained\b",r"\bconflict of interest\b",r"\bethics?\b",r"\binsider\b",r"\bsubpoena\b",r"\binvestigation\b"],
     "總統安全／國安": [r"\bsecret service\b",r"\bair force one\b",r"\bsecret flight\b",r"\bassassinat",r"\bsecurity threat\b",r"\bthreats? against trump\b"],
     "醫療／社會政策": [r"\bmedicaid\b",r"\bvaccine(s)?\b",r"\bmmr\b",r"gender[- ]affirming",r"transgender",r"\bhealth care\b",r"\bhealthcare\b"],
@@ -25,7 +26,9 @@ KEYWORDS={
 
 def heuristic_analyze(title:str,body:str)->AIAnalysis:
     text=(title+" "+body).lower()
-    if re.search(r"\b(financial disclosure|holdings?|stocks? gained|conflict of interest|ethics?|insider|subpoena|investigation)\b",text):
+    if re.search(r"\b(immigration|deport(?:ed|ation|ations)?|border|asylum|ice|visa(s)?|h-?1b)\b",text):
+        category="移民／邊境政策"; best=99
+    elif re.search(r"\b(financial disclosure|holdings?|stocks? gained|conflict of interest|ethics?|insider|subpoena|investigation)\b",text):
         category="法律／監管／倫理"; best=99
     elif re.search(r"\btmtg\b|\bdjt\b|truth social (traffic|revenue|contract|subscription|business)|posting spree",text):
         category="社群訊號／TMTG"; best=99

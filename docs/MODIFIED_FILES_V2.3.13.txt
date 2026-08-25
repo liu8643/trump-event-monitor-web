@@ -1,0 +1,16 @@
+V2.3.13 modified/new files
+.env.example
+app/streamlit_app.py
+pyproject.toml
+src/trump_monitor/translation.py
+src/trump_monitor/collectors/gdelt.py
+src/trump_monitor/classifier.py
+src/trump_monitor/ai_service.py
+src/trump_monitor/materiality.py
+src/trump_monitor/engine.py
+src/trump_monitor/exporters/excel_exporter.py
+tests/test_v2313_live_regressions.py
+README.md
+CHANGELOG.md
+docs/MODIFIED_FILES_V2.3.13.txt
+docs/TEST_RESULTS_V2.3.13.txt

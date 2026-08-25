@@ -22,7 +22,7 @@ def test_google_translation_parse(monkeypatch):
     monkeypatch.setenv("TRANSLATION_PROVIDER", "GOOGLE_WEB")
     monkeypatch.setattr("trump_monitor.translation.requests.get", lambda *a, **k: Resp())
     import trump_monitor.translation as tr
-    tr._CACHE.clear()
+    tr._CACHE.clear(); tr._GOOGLE_BLOCKED_UNTIL=0.0
     r = translate_text("Trump says his plane faced greater risk")
     assert r.text_zh == "川普表示他的飛機面臨更大的風險"
     assert r.status == "SUCCESS"
