@@ -1,3 +1,7 @@
+## V2.3.12 09:34 Live Run 三輪交互分析修正版
+
+本版直接由 V2.3.11 Live 輸出反查：White House 直連已成功，但 GDELT 遭 HTTP 429；Google Web 翻譯亦遭 HTTP 429，造成 68 個事件中文欄全空。V2.3.12 將翻譯改為批次請求、GDELT加入5秒以上重試與明確cache降級，並修正市場/產業彙總不應被一般WATCH事件平均或覆寫。
+
 ## V2.3.11 三輪交互分析修正版（基於使用者指定 V2.3.9）
 
 - 2026-08-24 Live report 顯示 86 個事件僅 10 個有繁中（11.6%）；大量 `TITLE:FAILED:HTTPError`。根因是免Key Google Web翻譯以 8 workers burst 呼叫、失敗結果還會被記憶體快取。新版改為成功才快取、磁碟持久cache、2 workers、節流、429/5xx retry/backoff、CJK有效性檢查。

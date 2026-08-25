@@ -1,0 +1,22 @@
+V2.3.12 modified/new files (based directly on uploaded V2.3.11 live source)
+
+.github/workflows/ci.yml
+.github/workflows/release.yml
+.github/workflows/scheduled-monitor.yml
+.github/workflows/streamlit-smoke.yml
+.gitignore
+.env.example
+app/streamlit_app.py
+src/trump_monitor/translation.py
+src/trump_monitor/engine.py
+src/trump_monitor/materiality.py
+src/trump_monitor/classifier.py
+src/trump_monitor/ai_service.py
+src/trump_monitor/collectors/gdelt.py
+src/trump_monitor/exporters/excel_exporter.py
+tests/test_v2312_live_regressions.py
+pyproject.toml
+README.md
+CHANGELOG.md
+docs/MODIFIED_FILES_V2.3.12.txt
+docs/TEST_RESULTS_V2.3.12.txt

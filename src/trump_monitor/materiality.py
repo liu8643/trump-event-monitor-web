@@ -7,14 +7,14 @@ HIGH_IMPACT_CATEGORIES = {
     "地緣政治／能源", "總統安全／國安", "關稅／國際貿易", "AI／半導體",
 }
 MEDIUM_IMPACT_CATEGORIES = {
-    "美國政治／選舉制度", "社群訊號／TMTG", "醫療／社會政策",
+    "美國政治／選舉制度", "社群訊號／TMTG", "醫療／社會政策", "法律／監管／倫理",
 }
 
 
 def _semantic_severity(items: list[RawItem], category: str) -> int:
     text=" ".join(f"{x.title} {x.body[:700]}" for x in items).lower()
     bonus=0
-    if category == "地緣政治／能源" and re.search(r"\b(strike|attack|military option|military options|hit them really hard|war|blockade|hormuz)\b", text):
+    if category == "地緣政治／能源" and re.search(r"\b(strike|attack|attacks|attacked|military option|military options|hit them really hard|blockade|bomb|bombing|launch|launched|invade|invasion|close hormuz|seize)\b", text):
         bonus=max(bonus,10)
     if category == "總統安全／國安" and re.search(r"\b(assassinat|secret service|air force one|secret flight|secretly switch|decoy plane|catering truck|security threat|threat)\b", text):
         bonus=max(bonus,10)
@@ -24,6 +24,24 @@ def _semantic_severity(items: list[RawItem], category: str) -> int:
         bonus=max(bonus,5)
     return bonus
 
+
+
+def _context_penalty(items: list[RawItem]) -> int:
+    """Reduce materiality for coverage *about* politics/war rather than a new action.
+
+    Live V2.3.11 promoted an approval poll and personal stock-gain story to RED/ORANGE
+    simply because their headlines contained Iran/war.  These can matter, but they are
+    not equivalent to a new military order, tariff implementation, sanction, or official act.
+    """
+    text=" ".join(f"{x.title} {x.body[:500]}" for x in items).lower()
+    penalty=0
+    if re.search(r"\b(poll|polls|survey|approval rating|approval holds|public support)\b", text):
+        penalty=max(penalty,18)
+    if re.search(r"\b(stocks? gained|holdings?|financial disclosure|conflict of interest|personal stake|net worth)\b", text):
+        penalty=max(penalty,15)
+    if re.search(r"\b(opinion|analysis|commentary|what .* teaches us|demand .* details|demand .* accounting)\b", text):
+        penalty=max(penalty,10)
+    return penalty
 
 def score_materiality(items: list[RawItem], category: str, score: EventScore) -> tuple[int, str, bool]:
     """0-100 materiality gate independent of market direction.
@@ -55,6 +73,7 @@ def score_materiality(items: list[RawItem], category: str, score: EventScore) ->
         total += min(10, 4 + 2 * (len(publishers) - 2))
     if unconfirmed_only:
         total -= 20
+    total -= _context_penalty(items)
     total = max(0, min(100, int(total)))
 
     if total >= 85: level = "BLACK"

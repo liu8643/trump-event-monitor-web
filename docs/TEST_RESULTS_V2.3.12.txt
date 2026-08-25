@@ -1,0 +1,27 @@
+V2.3.12 verification summary
+Date: 2026-08-25
+Baseline source: user-uploaded V2.3.11 GitHub ZIP
+Live evidence: TRUMP-RUN-20260825-093418 report + CSV + Streamlit Cloud deployment log
+
+pytest: 58 passed / 0 failed
+compileall: PASS (src/app/scripts/tests)
+SAMPLE smoke: PASS; events=6; status=SUCCESS; artifacts=7
+
+New regression coverage:
+- Google Web translation batches multiple headlines into one HTTP request.
+- GDELT HTTP 429 retries after >=5.2 seconds.
+- GDELT can explicitly degrade to cached direct-URL metadata after live 429.
+- Poll/approval coverage mentioning war is not promoted like a new military action.
+- Personal holdings/stock-gain story routes to legal/regulatory/ethics, not geopolitical purely because it mentions Iran/war.
+- Actual 50% tariff action remains material.
+- Existing cross-publisher corroboration and direct-URL preference tests remain green.
+
+Live vs offline note:
+- The uploaded Live report proves White House direct source SUCCESS:3.
+- The uploaded Live report proves GDELT returned HTTP 429 in V2.3.11.
+- The uploaded Live report proves Google Web translation returned HTTP 429 and the event Chinese columns were empty.
+- V2.3.12 network fixes are regression-tested with deterministic mocks in this sandbox; no claim is made that external services were live-called from the build sandbox.
+
+Repository hygiene / deployment parity:
+- Uploaded V2.3.11 ZIP contained 65 *.pyc files and no .gitignore. V2.3.12 adds .gitignore and fixes nested __pycache__ exclusion in release workflow.
+- Uploaded Streamlit Cloud log shows production Python 3.14.7 while GitHub workflows used Python 3.11 only. V2.3.12 CI covers 3.11 + 3.14 and runtime workflows use 3.14 for closer parity.

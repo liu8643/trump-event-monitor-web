@@ -78,27 +78,40 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     ws3 = wb.create_sheet("03_市場影響")
     _style_title(ws3,10,"市場影響推估｜Rule 70%＋AI 30%")
     _header(ws3,4,["市場／資產","Rule分數","AI分數","綜合分數","信心度","方向","主要理由","可能受惠","可能受壓","觀察期間"])
-    aggregate: dict[str,list] = {}
-    for e in result.events:
-        for i in e.impacts: aggregate.setdefault(i.asset,[]).append(i)
-    for asset, impacts in aggregate.items():
-        avg=lambda field: round(sum(getattr(x,field) for x in impacts)/len(impacts))
-        top=max(impacts,key=lambda x:abs(x.final_score))
-        ws3.append([asset,avg("rule_score"),avg("ai_score"),avg("final_score"),sum(x.confidence for x in impacts)/len(impacts),top.direction,top.rationale,top.beneficiary,top.negative,top.horizon])
+    # The professional market-impact view must be driven by truly material events when available.
+    # Averaging every WATCH/noise event can neutralize a genuine major shock to zero.
+    market_events = [e for e in result.events if e.is_material] or result.events
+    aggregate: dict[str,list[tuple]] = {}
+    for e in market_events:
+        weight=max(0.10,(e.materiality_score/100.0)*max(0.25,e.score.confidence))
+        for i in e.impacts: aggregate.setdefault(i.asset,[]).append((i,e,weight))
+    for asset, rows in aggregate.items():
+        denom=sum(w for _,_,w in rows) or 1.0
+        weighted=lambda field: round(sum(getattr(i,field)*w for i,_,w in rows)/denom,2)
+        top_i,top_e,_=max(rows,key=lambda x:(x[1].materiality_score,abs(x[0].final_score),x[1].score.confidence))
+        conf=sum(i.confidence*w for i,_,w in rows)/denom
+        ws3.append([asset,weighted("rule_score"),weighted("ai_score"),weighted("final_score"),conf,top_i.direction,top_i.rationale,top_i.beneficiary,top_i.negative,top_i.horizon])
     _body(ws3,5,4+len(aggregate),10); _widths(ws3,{1:16,2:12,3:12,4:12,5:12,6:16,7:48,8:30,9:30,10:18}); ws3.freeze_panes="A5"
 
     ws4 = wb.create_sheet("04_產業影響")
     _style_title(ws4,11,"產業與台股傳導方向｜含信心度與GTC Gate")
     _header(ws4,3,["產業","方向","分數","信心度","資料新鮮度","驅動因素","正面催化","主要風險","GTC建議","Gate結果","備註"])
-    sectors={}
-    for e in result.events:
-        for sec in e.beneficiary_sectors: sectors[sec]=(e,1)
-        for sec in e.negative_sectors: sectors[sec]=(e,-1)
-    for sec,(e,sign) in sectors.items():
-        score=int(round(abs(e.score.final_score))) * sign
-        direction="偏多" if score>=2 else "偏空" if score<=-2 else "中性"
-        gate="BLOCKED_SAMPLE" if e.data_freshness!="CURRENT" else "WATCH_ONLY"
-        ws4.append([sec,direction,score,e.score.confidence,e.data_freshness,e.category,"事件催化","事件反轉",e.battle_action,gate,"事件映射範例"])
+    # Aggregate sectors across material events instead of last-write-wins.
+    sector_events = [e for e in result.events if e.is_material] or result.events
+    sectors: dict[str,list[tuple]] = {}
+    for e in sector_events:
+        magnitude=max(1.0,abs(e.score.final_score))*(e.materiality_score/100.0)*max(.25,e.score.confidence)
+        for sec in e.beneficiary_sectors: sectors.setdefault(sec,[]).append((e, magnitude))
+        for sec in e.negative_sectors: sectors.setdefault(sec,[]).append((e,-magnitude))
+    for sec, rows in sectors.items():
+        raw_score=sum(v for _,v in rows)
+        score=max(-5,min(5,round(raw_score,2)))
+        direction="偏多" if score>=1.5 else "偏空" if score<=-1.5 else "中性"
+        top=max(rows,key=lambda x:(x[0].materiality_score,abs(x[1])))[0]
+        conf=sum(e.score.confidence*abs(v) for e,v in rows)/(sum(abs(v) for _,v in rows) or 1)
+        gate="BLOCKED_SAMPLE" if top.data_freshness!="CURRENT" else "WATCH_ONLY"
+        drivers="；".join(dict.fromkeys(e.category for e,_ in rows))
+        ws4.append([sec,direction,score,conf,top.data_freshness,drivers,"真正重大事件催化","事件反轉",top.battle_action,gate,f"彙總{len(rows)}個事件映射"])
     _body(ws4,4,3+len(sectors),11); _widths(ws4,{1:22,2:16,3:10,4:12,5:16,6:30,7:25,8:25,9:13,10:18,11:28}); ws4.freeze_panes="A4"
 
     ws5 = wb.create_sheet("05_GTC事件輸出")
@@ -146,7 +159,7 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
       ["GTC WatchList","JSON/CSV review-required輸出","未直接寫外部GTC DB","REVIEW_REQUIRED","PASS"],
       ["Word/PDF","一鍵下載","PDF字型依部署環境","fallback字型","PASS"],
       ["每5分鐘更新","頁面開啟自動刷新＋GitHub排程","Cloud sleep/GitHub cron可能延遲","best effort","PASS"],
-      ["中英文同步","英文原文＋繁中翻譯欄位；UI/Excel/Word/PDF/HTML/JSON共用","AUTO預設LLM或Google Web best-effort；外部服務可能失效","翻譯失敗不影響英文原文與事件判斷","PASS"],
+      ["中英文同步","英文原文＋繁中翻譯欄位；UI/Excel/Word/PDF/HTML/JSON共用","AUTO預設LLM或Google Web best-effort；外部服務可能失效","翻譯失敗不影響英文原文與事件判斷", (lambda total,zh: "PASS" if total and zh/total>=0.8 else f"DEGRADED:{zh}/{total}" if total else "NO_DATA")(sum(len(e.sources) for e in result.events),sum(1 for e in result.events for x in e.sources if x.title_zh))],
       ["歷史資料庫","run/event/source/impact/watchlist SQLite","Streamlit本機磁碟非永久","建議外接PostgreSQL/S3","PASS"],
     ]: ws8.append(r)
     _body(ws8,4,12,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"

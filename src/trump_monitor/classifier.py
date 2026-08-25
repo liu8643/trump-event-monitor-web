@@ -3,6 +3,7 @@ import re
 from trump_monitor.models import RawItem
 
 KEYWORDS = {
+    "法律／監管／倫理": [r"\bfinancial disclosure\b",r"\bholdings?\b",r"\bstocks? gained\b",r"\bconflict of interest\b",r"\bethics?\b",r"\binsider\b",r"\bsubpoena\b",r"\binvestigation\b"],
     "總統安全／國安": [r"\bsecret service\b",r"\bair force one\b",r"\bsecret flight\b",r"\bassassinat",r"\bsecurity threat\b",r"\bthreats? against trump\b"],
     "醫療／社會政策": [r"\bmedicaid\b",r"\bvaccine(s)?\b",r"\bmmr\b",r"gender[- ]affirming",r"transgender",r"\bhealth care\b",r"\bhealthcare\b"],
     "地緣政治／能源": [r"\biran\b",r"\bhormuz\b",r"\bwar\b",r"\bstrike(s|d)?\b",r"\bmilitary\b",r"\boil\b",r"\bisrael\b"],
@@ -14,6 +15,7 @@ KEYWORDS = {
 
 def classify_category(item: RawItem) -> str:
     text=f"{item.title} {item.body}".lower()
+    if re.search(r"\b(financial disclosure|holdings?|stocks? gained|conflict of interest|ethics?|insider|subpoena|investigation)\b", text): return "法律／監管／倫理"
     if re.search(r"\btmtg\b|\bdjt\b|truth social (traffic|revenue|contract|subscription|business)|posting spree", text): return "社群訊號／TMTG"
     scores={cat:sum(1 for pattern in patterns if re.search(pattern,text)) for cat,patterns in KEYWORDS.items()}
     best,count=max(scores.items(),key=lambda kv:kv[1])

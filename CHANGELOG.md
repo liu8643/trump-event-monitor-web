@@ -1,3 +1,11 @@
+## 2.3.12 - 2026-08-25
+- 以 09:34 Live Run 重新三輪交互分析：68 events / 3 material、White House 3筆成功、GDELT HTTP 429、中文翻譯全數 HTTP 429。
+- Google Web 翻譯改成小批次 marker 翻譯，將每標題一請求降為每批一請求；保留成功才cache與跨Run persistent cache。
+- GDELT 遵守至少5秒 429 retry，支援成功payload cache；live 429時可在72h窗內以明確 CACHE acquisition 狀態降級。
+- 市場影響頁改由真正重大事件加權聚合，避免大量 WATCH 事件把重大衝擊平均成0。
+- 產業影響頁修正 last-write-wins，改為重大事件跨事件加權彙總。
+- 功能限制頁的中英文同步驗收改為 runtime coverage，低於80%標示 DEGRADED，不再固定顯示PASS。
+
 
 ## 2.3.11 - 2026-08-25
 - Three-round live evidence review from TRUMP-RUN-20260824-182701.
