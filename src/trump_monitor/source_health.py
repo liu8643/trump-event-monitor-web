@@ -8,36 +8,43 @@ from trump_monitor.models import RunResult
 
 SOURCE_HEALTH_ORDER = [
     ("truth_official_timeline", "Truth Official", "第一手公開時間軸"),
+    ("whitehouse_official", "White House Official", "第一手官方公告／聲明／總統行動直連"),
     ("truth_search_index", "Truth Search", "搜尋索引／降級發現"),
-    ("publisher:reuters", "Reuters", "媒體交叉驗證"),
-    ("publisher:ap", "AP", "媒體交叉驗證"),
-    ("publisher:bloomberg", "Bloomberg", "媒體交叉驗證"),
-    ("cnbc", "CNBC", "獨立 CNBC RSS 來源"),
+    ("publisher:reuters", "Reuters", "媒體publisher覆蓋（取得通道另列）"),
+    ("publisher:ap", "AP", "媒體publisher覆蓋（取得通道另列）"),
+    ("publisher:bloomberg", "Bloomberg", "媒體publisher覆蓋（取得通道另列）"),
+    ("cnbc", "CNBC", "CNBC via Google News RSS source filter"),
     ("google_news_rss", "Google RSS", "聚合新聞補充"),
-    ("newsapi", "NewsAPI", "API 補充"),
-    ("gnews", "GNews", "API 補充"),
+    ("gdelt", "GDELT", "免Key多來源新聞發現／直接publisher URL"),
+    ("newsapi", "NewsAPI", "API 補充（需Key）"),
+    ("gnews", "GNews", "API 補充（需Key）"),
 ]
 
 
-def _publisher_counts(result: RunResult) -> dict[str, int]:
-    seen: dict[str, set[str]] = defaultdict(set)
+def _publisher_evidence(result: RunResult) -> dict[str, dict[str, Any]]:
+    ids: dict[str, set[str]] = defaultdict(set)
+    channels: dict[str, set[str]] = defaultdict(set)
     for event in result.events:
         for item in event.sources:
             name = (item.publisher_group or item.source_name or "").strip().lower()
             if not name:
                 continue
+            keys: list[str] = []
             if "reuters" in name:
-                seen["reuters"].add(item.raw_item_id)
-            if name in {"ap", "ap news", "associated press"} or "associated press" in name:
-                seen["ap"].add(item.raw_item_id)
+                keys.append("reuters")
+            if name in {"ap", "ap news", "associated press", "apnews.com"} or "associated press" in name or "apnews" in name:
+                keys.append("ap")
             if "bloomberg" in name:
-                seen["bloomberg"].add(item.raw_item_id)
-    return {key: len(ids) for key, ids in seen.items()}
+                keys.append("bloomberg")
+            for key in keys:
+                ids[key].add(item.raw_item_id)
+                channels[key].add(item.acquisition_method or "UNKNOWN")
+    return {key: {"count": len(ids[key]), "channels": sorted(channels[key])} for key in set(ids) | set(channels)}
 
 
 def _state_from_status(status: str, count: int) -> tuple[str, str, int]:
     value = (status or "").upper()
-    if count > 0 or value.startswith("SUCCESS"):
+    if count > 0 or value.startswith("SUCCESS") or value.startswith("PUBLISHER_COVERAGE"):
         return "SUCCESS", "🟢 成功", 100
     if value.startswith("FAILED"):
         return "FAILED", "🔴 失敗", 0
@@ -49,26 +56,23 @@ def _state_from_status(status: str, count: int) -> tuple[str, str, int]:
 
 
 def build_source_health(result: RunResult) -> list[dict[str, Any]]:
-    """Return stable, homepage-ready source health rows.
-
-    Adapter-level sources use ``source_status`` / ``source_counts``.
-    Reuters/AP/Bloomberg are publisher-level counts derived from the deduplicated
-    evidence rows retained in the event result, because they arrive mainly via
-    the aggregate Google News RSS adapter rather than dedicated APIs.
-    """
-    publisher_counts = _publisher_counts(result)
+    """Stable source-health rows that separate publisher identity from acquisition channel."""
+    publisher = _publisher_evidence(result)
     google_state = result.source_status.get("google_news_rss", "NOT_CONFIGURED")
+    gdelt_state = result.source_status.get("gdelt", "NOT_CONFIGURED")
     rows: list[dict[str, Any]] = []
 
     for key, label, role in SOURCE_HEALTH_ORDER:
         if key.startswith("publisher:"):
             publisher_key = key.split(":", 1)[1]
-            count = publisher_counts.get(publisher_key, 0)
+            rec = publisher.get(publisher_key, {"count": 0, "channels": []})
+            count = int(rec["count"])
+            channels = rec["channels"]
             if count > 0:
-                raw_status = f"SUCCESS:{count}"
-            elif google_state.startswith("FAILED"):
-                raw_status = f"FAILED:UPSTREAM:{google_state}"
-            elif google_state == "NOT_CONFIGURED":
+                raw_status = f"PUBLISHER_COVERAGE:{count};VIA={','.join(channels) if channels else 'UNKNOWN'}"
+            elif google_state.startswith("FAILED") and gdelt_state.startswith("FAILED"):
+                raw_status = f"FAILED:UPSTREAM:GOOGLE={google_state};GDELT={gdelt_state}"
+            elif google_state == "NOT_CONFIGURED" and gdelt_state == "NOT_CONFIGURED":
                 raw_status = "NOT_CONFIGURED"
             else:
                 raw_status = "NO_DATA:0"

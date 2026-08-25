@@ -1,0 +1,10 @@
+V2.3.11 validation
+- pytest: 52 passed / 0 failed
+- compileall: PASS
+- SAMPLE smoke: PASS; events=6; status=SUCCESS; artifacts=7
+- Cross-publisher dedup regression: PASS
+- Same-publisher direct URL preference: PASS
+- Translation failed-result retry regression: PASS
+- GDELT direct URL mock regression: PASS
+- White House direct URL mock regression: PASS
+- Debug Log download capability retained in app/streamlit_app.py

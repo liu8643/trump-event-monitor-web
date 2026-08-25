@@ -273,8 +273,18 @@ class TruthTimelineCollector(SourceAdapter):
                 if rows:
                     self.last_observations.append(self._observation("RENDERED_HTML", "SUCCESS_RENDERED_PARTIAL", f"Rendered posts: {len(rows)}", "畫面可見內容已記錄；可能不是完整時間軸。", True, "PARTIAL_FIRST_PARTY"))
                 else:
-                    status="STATIC_HTML_JS_REQUIRED" if "enable javascript" in body_text.lower() else "RENDERED_NO_POSTS"
-                    self.last_observations.append(self._observation("RENDERED_HTML", status, body_text, "未辨識到可送入事件引擎的公開貼文；請點官方頁查閱。"))
+                    low=body_text.lower()
+                    is_cf=("performing security verification" in low or "cloudflare" in low or "ray id:" in low or "enable javascript and cookies" in low)
+                    if is_cf:
+                        status="ACCESS_DENIED_CLOUDFLARE_CHALLENGE"
+                        note="Rendered page is a Cloudflare/security verification challenge, not a valid no-posts timeline."
+                    elif "enable javascript" in low:
+                        status="STATIC_HTML_JS_REQUIRED"
+                        note="公開頁需要JavaScript，未辨識到可送入事件引擎的貼文。"
+                    else:
+                        status="RENDERED_NO_POSTS"
+                        note="頁面正常載入但未辨識到可送入事件引擎的公開貼文；請點官方頁查閱。"
+                    self.last_observations.append(self._observation("RENDERED_HTML", status, body_text, note))
         except Exception as exc:
             message = f"{type(exc).__name__}: {exc}"
             status = "RENDERER_BROWSER_MISSING" if "Executable doesn't exist" in message or "playwright install" in message.lower() else "RENDERED_HTML_FAILED"

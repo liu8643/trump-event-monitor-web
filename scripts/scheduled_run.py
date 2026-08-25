@@ -7,6 +7,11 @@ from trump_monitor.engine import TrumpEventEngine
 from trump_monitor.logging_utils import configure_logging, get_logger, log_exception
 from trump_monitor.collectors.google_news_rss import GoogleNewsRssAdapter
 from trump_monitor.collectors.cnbc import CnbcNewsAdapter
+from trump_monitor.collectors.gdelt import GdeltDocAdapter
+from trump_monitor.collectors.whitehouse import WhiteHouseOfficialAdapter
+from trump_monitor.collectors.gnews import GNewsAdapter
+from trump_monitor.collectors.newsapi import NewsApiAdapter
+import os
 from trump_monitor.collectors.truth_social import TruthTimelineCollector,TruthManualImportAdapter,TruthSearchIndexAdapter
 from trump_monitor.exporters.excel_exporter import export_excel
 from trump_monitor.exporters.json_exporter import export_json
@@ -19,8 +24,12 @@ cfg=load_config(ROOT/'config.yaml'); adapters=[]
 if cfg.truth_official_timeline_enabled:
     adapters.append(TruthTimelineCollector(cfg.truth_profile_url,cfg.truth_account,account_id=cfg.truth_official_account_id,timeout=cfg.truth_official_timeline_timeout,max_pages=cfg.truth_official_timeline_max_pages,rendered_html_enabled=cfg.truth_rendered_html_enabled,static_html_enabled=cfg.truth_static_html_enabled,rendered_timeout=cfg.truth_rendered_timeout,chromium_executable=cfg.truth_chromium_executable))
 adapters.extend([TruthManualImportAdapter(ROOT/cfg.truth_manual_import_path,cfg.truth_account),TruthSearchIndexAdapter(cfg.truth_account)])
+if cfg.whitehouse_enabled: adapters.append(WhiteHouseOfficialAdapter(timeout=cfg.whitehouse_timeout))
 if cfg.cnbc_enabled: adapters.append(CnbcNewsAdapter(timeout=cfg.cnbc_timeout))
 adapters.append(GoogleNewsRssAdapter())
+if cfg.gdelt_enabled: adapters.append(GdeltDocAdapter(timeout=cfg.gdelt_timeout))
+if os.getenv("GNEWS_API_KEY"): adapters.append(GNewsAdapter())
+if os.getenv("NEWSAPI_API_KEY"): adapters.append(NewsApiAdapter())
 out=ROOT/'output'; out.mkdir(exist_ok=True); configure_logging(out)
 r=TrumpEventEngine(cfg,adapters).run(datetime.now(timezone.utc))
 export_excel(r,out/'latest.xlsx'); export_json(r,out/'latest.json'); export_html(r,out/'latest.html'); export_docx(r,out/'latest.docx'); export_pdf(r,out/'latest.pdf')

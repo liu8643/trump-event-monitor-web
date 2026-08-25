@@ -7,6 +7,7 @@ from openpyxl.chart import BarChart, Reference
 from openpyxl.utils import get_column_letter
 
 from trump_monitor.models import RunResult
+from trump_monitor.source_health import build_source_health
 
 TITLE_FILL = PatternFill("solid", fgColor="17365D")
 HEADER_FILL = PatternFill("solid", fgColor="1F4E78")
@@ -151,33 +152,15 @@ def export_excel(result: RunResult, path: str | Path) -> Path:
     _body(ws8,4,12,5); _widths(ws8,{1:22,2:44,3:42,4:38,5:14}); ws8.freeze_panes="A4"
 
     ws9 = wb.create_sheet("09_來源健康")
-    _style_title(ws9,6,"來源執行狀態與筆數｜CNBC獨立可追溯")
-    _header(ws9,3,["來源鍵","狀態","筆數","來源定位","是否獨立執行","備註"])
-    labels={
-      "truth_official_timeline":"Truth Social Official Timeline",
-      "truth_official_api":"Truth Social Licensed API",
-      "truth_manual_import":"Truth Social Manual Import",
-      "truth_search_index":"Truth Social Search Index",
-      "cnbc":"CNBC（Google News RSS source filter）",
-      "google_news_rss":"Google News RSS",
-      "gnews":"GNews",
-      "newsapi":"NewsAPI",
-    }
-    all_keys=list(dict.fromkeys(list(labels)+list(result.source_status)))
-    for key in all_keys:
-        status=result.source_status.get(key,"NOT_CONFIGURED")
-        count=result.source_counts.get(key,0)
-        role="財經媒體驗證" if key=="cnbc" else "來源蒐集／補充"
-        independent="是" if key in result.source_status else "否"
-        warning_detail="；".join(w for w in result.warnings if w.startswith(f"{key}:"))
-        note="原CNBC資料曾包含在google_news_rss內；V2.2.2新增獨立狀態與筆數。" if key=="cnbc" else ""
-        if warning_detail:
-            note=(note+"；" if note else "")+warning_detail
-        ws9.append([key,status,count,labels.get(key,key),independent,note])
-    _body(ws9,4,3+len(all_keys),6); _widths(ws9,{1:28,2:24,3:12,4:44,5:18,6:65}); ws9.freeze_panes="A4"
+    _style_title(ws9,7,"來源執行狀態與筆數｜Publisher身分與取得通道分離")
+    _header(ws9,3,["來源鍵","狀態","筆數","來源定位","覆蓋率","角色","詳細狀態"])
+    health_rows=build_source_health(result)
+    for row in health_rows:
+        ws9.append([row["source_key"],row["狀態"],row["筆數"],row["來源"],row["覆蓋率"],row["角色"],row["詳細狀態"]])
+    _body(ws9,4,3+len(health_rows),7); _widths(ws9,{1:28,2:18,3:12,4:34,5:12,6:46,7:70}); ws9.freeze_panes="A4"
 
     if result.source_observations:
-        start_row=6+len(all_keys)
+        start_row=6+len(health_rows)
         ws9.cell(start_row,1,"Truth Official 四層取得與人工查閱紀錄")
         ws9.cell(start_row,1).font=Font(bold=True,size=13,color="1F4E78")
         headers=["層級","狀態","顯示/回傳內容","備註","可進事件引擎","證據品質","官方網址","觀察時間"]

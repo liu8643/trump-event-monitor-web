@@ -31,6 +31,10 @@ class AppConfig:
     truth_chromium_executable: str = ""
     cnbc_enabled: bool = True
     cnbc_timeout: int = 20
+    whitehouse_enabled: bool = True
+    whitehouse_timeout: int = 15
+    gdelt_enabled: bool = True
+    gdelt_timeout: int = 20
 
     @property
     def sample_mode(self) -> bool:
@@ -44,6 +48,8 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
     app, scoring, export, sources = data.get("app", {}), data.get("scoring", {}), data.get("export", {}), data.get("sources", {})
     truth = sources.get("truth_social", {})
     cnbc = sources.get("cnbc", {})
+    whitehouse = sources.get("whitehouse_official", {})
+    gdelt = sources.get("gdelt", {})
     mode = str(app.get("mode", "AUTO")).upper()
     if mode not in {"AUTO", "ONLINE", "SAMPLE"}: mode = "AUTO"
     return AppConfig(
@@ -64,4 +70,8 @@ def load_config(path: str | Path = "config.yaml") -> AppConfig:
         truth_chromium_executable=str(truth.get("chromium_executable", "")),
         cnbc_enabled=bool(cnbc.get("enabled", True)),
         cnbc_timeout=int(cnbc.get("timeout_seconds", 20)),
+        whitehouse_enabled=bool(whitehouse.get("enabled", True)),
+        whitehouse_timeout=int(whitehouse.get("timeout_seconds", 15)),
+        gdelt_enabled=bool(gdelt.get("enabled", True)),
+        gdelt_timeout=int(gdelt.get("timeout_seconds", 20)),
     )

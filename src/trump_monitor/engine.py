@@ -53,6 +53,7 @@ class TrumpEventEngine:
         categories: dict[str,str] = {}
         summary_candidates: dict[str, str] = {}
         translation_inputs: list[str] = []
+        translation_keys: dict[str, tuple[str, str]] = {}
         for item in unique:
             item.source_type=classify_source_type(item)  # type: ignore[misc]
             ai=analyze(item.title,item.body)
@@ -60,7 +61,21 @@ class TrumpEventEngine:
             summary_candidate=(ai.summary_zh or "").strip()
             summary_candidates[item.raw_item_id]=summary_candidate
             # Translation is enrichment only. Original English title/body remain the evidence used by dedup/clustering/scoring.
-            translation_inputs.append(item.title)
+            # Google RSS commonly appends " - Publisher". Translate only the headline body and re-attach the exact
+            # evidence publisher name so the translation layer cannot invent/rename a source.
+            publisher=(item.publisher_group or item.source_name or "").strip()
+            clean_title=" ".join(item.title.split()).strip()
+            core_title=clean_title
+            suffix=""
+            if publisher:
+                for sep in (" - ", " – ", " — "):
+                    expected=sep+publisher
+                    if clean_title.lower().endswith(expected.lower()):
+                        core_title=clean_title[:-len(expected)].rstrip()
+                        suffix=expected
+                        break
+            translation_inputs.append(core_title)
+            translation_keys[item.raw_item_id]=(core_title,suffix)
             if item.acquisition_method in {"LICENSED_API", "MANUAL_IMPORT"} and item.body:
                 item.content_status="FULL_OR_LICENSED"
             elif item.body:
@@ -76,10 +91,10 @@ class TrumpEventEngine:
         translations=translate_many(translation_inputs)
         translated_items=0
         for item in unique:
-            title_key=" ".join(item.title.split()).strip()
+            title_key,suffix=translation_keys.get(item.raw_item_id,(" ".join(item.title.split()).strip(),""))
             title_result=translations.get(title_key)
             if title_result and title_result.text_zh:
-                item.title_zh=title_result.text_zh; translated_items += 1
+                item.title_zh=title_result.text_zh + suffix; translated_items += 1
             summary_candidate=summary_candidates.get(item.raw_item_id, "")
             if contains_cjk(summary_candidate):
                 item.ai_summary_zh=summary_candidate
@@ -141,7 +156,7 @@ class TrumpEventEngine:
             truth_status="NO_POSTS_IN_WINDOW"
         result=RunResult(run_id=f"TRUMP-RUN-{started.astimezone(ZoneInfo(self.config.timezone)):%Y%m%d-%H%M%S}",started_at=started,
             completed_at=datetime.now(timezone.utc),lookback_hours=self.config.lookback_hours,timezone=self.config.timezone,status=status,
-            rule_version="TRUMP_RULE_V2.3.9",prompt_version="TRUMP_PROMPT_V2.3.9",model_version="V238_BILINGUAL_TRANSLATION_UI_CONFIDENCE_V2.3.9",schema_version=self.config.schema_version,
+            rule_version="TRUMP_RULE_V2.3.11",prompt_version="TRUMP_PROMPT_V2.3.11",model_version="V239_BASE_3ROUND_TRANSLATION_MULTISOURCE_V2.3.11",schema_version=self.config.schema_version,
             source_status=source_status,source_counts=source_counts,source_observations=source_observations,source_priority=SOURCE_PRIORITY_LABELS,data_mode="SAMPLE" if self.config.sample_mode else "ONLINE",
             truth_social_status=truth_status,events=events,warnings=warnings,taiwan_candidates=candidates,watchlist_paths=[])
         logger.info("run complete | run_id=%s | status=%s | events=%d | material=%d | warnings=%d", result.run_id, result.status, len(events), sum(e.is_material for e in events), len(warnings))
